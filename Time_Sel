@@ -29,12 +29,12 @@
 ; variable/data section
 MY_ZEROPAGE: SECTION  SHORT         ; Insert here your data definition
 
-estados: SECTION SHORT
+states: SECTION SHORT
 pht:		ds.b   1	; configurando duracion de periodo y descanso
 scores:		ds.b   1	; modifica goles
 extra:		ds.b   1	; configurando tiempo extra
 
-teclado: SECTION SHORT
+keyboard: SECTION SHORT
 numero:		ds.b   1	; numero pulsado
 fkbi:		ds.b   1	; flag kbi
 rowa:		ds.b   1	; row actual
@@ -43,7 +43,7 @@ col:		ds.b   1   ; col activada cuando se dio la interrupcion
 
 times: SECTION SHORT
 
-sel_tiempo:			ds.b   1 ; 0-> duracion periodo
+t_sel:			ds.b   1 ; 0-> duracion periodo
 							 ; 1-> duracion descanso
 period_minh:		ds.b   1
 period_minl:		ds.b   1
@@ -141,7 +141,7 @@ _Startup:
 			sta	  row
 			sta	  rowa
 			sta	  col
-			sta   sel_tiempo
+			sta   t_sel
 			sta   period_minh
 			sta   period_minl
 			sta   period_segh
@@ -309,9 +309,28 @@ num0:		lda		#$00
 			jmp 	clrfkbi
 
 A_key:			;start
+			lda     #$00
+			sta		pht
+			sta		extra
+			lda     #$01
+			sta		scores
 			jmp 	clrfkbi
 			
 C_key:			;HT
+			lda #$01
+			cmp	extra
+			beq cs11
+			bne	cs22
+		
+cs11:					
+			lda #$00
+			sta	extra
+			bra clrfkbi
+		
+cs22:					
+			lda #$01
+			sta	extra
+			jmp clrfkbi
 			lda #$00
 			sta numg
 			sta numh
@@ -341,7 +360,7 @@ B_key:			;rotar entre tiempos
 			sta numd
 			
 			lda #$01
-			cmp	sel_tiempo
+			cmp	t_sel
 			beq cs1
 			bne	cs2
 		
@@ -355,7 +374,7 @@ cs1:		lda numa		; si sel_tiempo estaba en 1 guarda los datos de numa-numd en des
 			sta	ht_segl
 			
 			lda #$00
-			sta	sel_tiempo
+			sta	t_sel
 			bra clrfkbi
 		
 cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en periodo
@@ -368,7 +387,7 @@ cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en
 			sta	period_segl
 					
 			lda #$01
-			sta	sel_tiempo
+			sta	t_sel
 			jmp clrfkbi
 			
 clrfkbi:	lda		#$00
