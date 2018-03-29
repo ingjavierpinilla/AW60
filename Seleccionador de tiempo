@@ -1,0 +1,457 @@
+;*******************************************************************
+;* Universidad Nacional de Colombia                                *
+;* Facultad de ingeniería mecánica y mecatrónica                   *
+;* Microcontroladores 2018-I                                       *
+;* Programador:                                                    *
+;* -Sebastian Cepeda Espinosa                                      *
+;* -Javier Mauricio Pinilla Garcia                    		       *
+;* Version: 1.0                                                    *
+;* Microcontrolador: MC9S08QG8CPBE                                 *
+;* Codigo para usar seleccionar y modificar los tiempos de cada    *
+;* periodo de un partido de fultol, descanso y tiempo extra;       *
+;* ademas de llevar cuenta de los goles de cada equipo             *
+;*******************************************************************
+
+; Include derivative-specific definitions
+            INCLUDE 'derivative.inc'
+            
+
+; export symbols
+            XDEF _Startup, main, kbirutina
+            ; we export both '_Startup' and 'main' as symbols. Either can
+            ; be referenced in the linker .prm file or from C/C++ later on
+            
+            
+            
+            XREF __SEG_END_SSTACK   ; symbol defined by the linker for the end of the stack
+
+
+; variable/data section
+MY_ZEROPAGE: SECTION  SHORT         ; Insert here your data definition
+
+estados: SECTION SHORT
+pht:		ds.b   1	; configurando duracion de periodo y descanso
+scores:		ds.b   1	; modifica goles
+extra:		ds.b   1	; configurando tiempo extra
+
+teclado: SECTION SHORT
+numero:		ds.b   1	; numero pulsado
+fkbi:		ds.b   1	; flag kbi
+rowa:		ds.b   1	; row actual
+row:		ds.b   1	; row activada cuando se dio la interrupcion
+col:		ds.b   1   ; col activada cuando se dio la interrupcion
+
+times: SECTION SHORT
+
+sel_tiempo:			ds.b   1 ; 0-> duracion periodo
+							 ; 1-> duracion descanso
+period_minh:		ds.b   1
+period_minl:		ds.b   1
+period_segh:		ds.b   1
+period_segl:		ds.b   1
+
+ht_minh:		ds.b   1
+ht_minl:		ds.b   1
+ht_segh:		ds.b   1
+ht_segl:		ds.b   1
+
+extra_minh:		ds.b   1
+extra_minl:		ds.b   1
+
+displays: SECTION SHORT
+numa:		ds.b   1
+numb:		ds.b   1
+numc:		ds.b   1
+numd:		ds.b   1
+nume:		ds.b   1
+numf:		ds.b   1
+numg:		ds.b   1
+numh:		ds.b   1
+
+scores_t: SECTION SHORT
+
+scoreA:		ds.b   1
+scoreB:		ds.b   1
+
+Interrupciones: SECTION
+
+; =============== Rutina KBI ==========================		
+kbirutina: 
+        pshh
+        bset	KBI1SC_KBACK,KBI1SC   ; Reconocimiento de int y forza la bandera a 0.
+        bclr	KBI1SC_KBIE,KBI1SC
+        lda		#$01
+        bsr		delay
+        lda		#$01
+        bsr		delay
+        lda		#$01
+        bsr		delay
+        lda		#$01
+        bsr		delay
+        lda		PTBD
+        and		#%00001111
+        sta		col        ; asigna a columna los ultimos 4 bits de PTB 
+
+loop1:  ;brset 0,PTAD,loop1 
+        ;brset 1,PTAD,loop1	
+        ;brset 2,PTAD,loop1
+        
+        lda rowa
+        sta	row
+		lda #$01
+		cmp	fkbi
+		beq st11
+		bne	st22
+		
+st11:	
+		lda #$00
+		sta	fkbi
+		bra kbi_fin
+		
+st22:	
+		lda #$01
+		sta	fkbi
+		bra kbi_fin
+
+kbi_fin:
+		 
+		
+		;bset KBI1SC_KBIE,KBI1SC
+		pulh
+		rti
+		
+		
+MyCode:     SECTION
+main:
+_Startup:
+            LDHX   #__SEG_END_SSTACK ; initialize the stack pointer
+            TXS
+            
+            lda   #$52
+			sta   SOPT ; Desactivar watchdog
+            jsr   kbi_conf
+            lda   #$01
+            sta	  pht ; de inicio se configuran duracion del periodo y descanso
+            lda	  #$00
+            sta	  scoreA
+            sta	  scoreB
+            sta	  scores
+            sta   extra
+			sta	  fkbi
+			sta	  row
+			sta	  rowa
+			sta	  col
+			sta   sel_tiempo
+			sta   period_minh
+			sta   period_minl
+			sta   period_segh
+			sta   period_segl
+			sta   ht_minh
+			sta   ht_minl
+			sta   ht_segh
+			sta   ht_segl
+			sta   extra_minh
+			sta   extra_minl
+			sta   numero
+			sta   numa
+			sta   numb
+			sta   numc
+			sta   numd
+			sta   nume
+			sta   numf
+			sta   numg
+			sta   numh
+			lda   #$0A
+            sta   numero
+            ;0 in
+            lda		#%11110000 ;     R ports, col
+			;		  |||||||+-col 1
+            ;		  ||||||+--col 2
+            ;         |||||+---col 3 
+            ;         ||||+----col 4 
+            ;		  ||||	         W ports, rows
+            ;		  |||+-----row 1
+            ;		  ||+------row 2
+            ;		  |+-------row 3		
+            ;		  +--------row 4					
+            sta		PTBDD
+     
+       
+            
+            
+            
+            
+			CLI			; enable interrupts
+
+mainLoop:
+            bset KBI1SC_KBIE,KBI1SC
+
+rows:
+            NOP
+            lda		PTBD
+            and		#%11110000
+            ora		#%00000100	;row 1 = 1
+			sta		PTBD
+			lda     #$01
+			sta		rowa
+			
+			NOP
+			lda		PTBD
+            and		#%11110000
+            ora		#%00000101	;row 2 = 1
+			sta		PTBD
+			lda     #$02
+			sta		rowa
+			
+			NOP
+			lda		PTBD
+            and		#%11110000
+            ora		#%00000110	;row 3 = 1
+			sta		PTBD
+			lda     #$03
+			sta		rowa
+			
+			NOP
+			lda		PTBD
+            and		#%11110000
+            ora		#%00000111	;row 4 = 1
+			sta		PTBD
+			lda     #$04
+			sta		rowa
+
+            BRA    mainLoop
+
+
+
+
+
+ver0:
+			lda		#$01
+			cmp		row
+			bne		ver1
+			brset	0,col,num1	;col 1 = 1
+			brset	1,col,num2	;col 2 = 1
+			brset	2,col,num3	;col 3 = 1
+			lda		PTBD
+			and		#%00001000
+			cmp		col
+			beq     A_key0
+			bne     ver0_1
+A_key0:		jsr 	A_key
+			;brset	3,col,A_key ;col 4 = 1
+ver0_1:		jsr     clrfkbi
+			
+ver1:		NOP
+			lda		#$02
+			cmp		row
+			bne		ver2
+			brset	0,col,num4	;col 1 = 1
+			brset	1,col,num5	;col 2 = 1
+			brset	2,col,num6	;col 3 = 1
+			brset	3,col,B_key 	;col 4 = 1
+			jsr    clrfkbi
+
+ver2:		lda		#$03
+			cmp		row
+			bne		ver3
+			brset	0,col,num7	;col 1 = 1
+			brset	1,col,num8	;col 2 = 1
+			brset	2,col,num9	;col 3 = 1
+			brset	3,col,C_key  	;col 4 = 1
+            jsr    clrfkbi
+            
+ver3:			
+			brset	0,col,star	;col 1 = 1
+			brset	1,col,num0	;col 2 = 1
+			brset	2,col,pound	;col 3 = 1
+			brset	3,col,D_key ;col 4 = 1
+			jsr    clrfkbi
+
+			
+num1:		lda		#$01
+			sta		numero
+			jsr 	clrfkbi
+			
+num2:		lda		#$02
+			sta		numero
+			bra 	clrfkbi
+			
+num3:		lda		#$03
+			sta		numero
+			jmp 	clrfkbi
+			
+num4:		lda		#$04
+			sta		numero
+			jmp 	clrfkbi
+			
+num5:		lda		#$05
+			sta		numero
+			jmp 	clrfkbi
+
+num6:		lda		#$06
+			sta		numero
+			jmp 	clrfkbi
+			
+num7:		lda		#$07
+			sta		numero
+			jmp 	clrfkbi
+			
+num8:		lda		#$08
+			sta		numero
+			jmp 	clrfkbi
+			
+num9:		lda		#$09
+			sta		numero
+			jmp 	clrfkbi
+			
+num0:		lda		#$00
+			sta		numero
+			jmp 	clrfkbi
+
+A_key:			;start
+			jmp 	clrfkbi
+			
+C_key:			;HT
+			lda #$00
+			sta numg
+			sta numh
+            jmp 	clrfkbi
+            
+D_key:			;reset
+			jmp 	clrfkbi
+			
+star:		;team goal 1
+			lda		scoreA
+			add		#$01
+			sta		scoreA
+			jmp 	clrfkbi
+			
+pound:		;team goal 2
+
+			lda		scoreB
+			add		#$01
+			sta		scoreB
+			jmp 	clrfkbi
+
+B_key:			;rotar entre tiempos
+			lda #$00
+			sta numa
+			sta numb
+			sta numc
+			sta numd
+			
+			lda #$01
+			cmp	sel_tiempo
+			beq cs1
+			bne	cs2
+		
+cs1:		lda numa		; si sel_tiempo estaba en 1 guarda los datos de numa-numd en descanso
+			sta	ht_minh
+			lda numb		
+			sta	ht_minl	
+			lda numc	
+			sta	ht_segh
+			lda numd		
+			sta	ht_segl
+			
+			lda #$00
+			sta	sel_tiempo
+			bra clrfkbi
+		
+cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en periodo
+			sta	period_minh
+			lda numb		
+			sta	period_minl	
+			lda numc	
+			sta	period_segh
+			lda numd		
+			sta	period_segl
+					
+			lda #$01
+			sta	sel_tiempo
+			jmp clrfkbi
+			
+clrfkbi:	lda		#$00
+			sta		fkbi
+			lda     #$01
+			cmp	    pht
+			beq		clrfkbi_B 
+			cmp		scores
+			beq		clrfkbi_scores
+			cmp		extra
+			beq		clrfkbi_extra  
+
+clrfkbi_B:			
+			lda 	numd
+			sta		numc
+			
+			lda 	numc
+			sta		numb
+			
+			lda 	numb
+			sta		numa
+			
+			lda 	numero
+			sta		numd
+			
+			
+			jsr		mainLoop
+
+clrfkbi_scores:
+			lda		scoreA
+			sta		nume
+			lda		scoreB
+			sta		numf
+			jsr		mainLoop
+			
+			
+clrfkbi_extra:
+			lda 	numh
+			sta		numg
+			
+			lda 	numero
+			sta		numh
+			
+			jsr		mainLoop
+
+
+
+
+
+ ;***********************************************************************************;
+ ;			                 Configuracion del KBI                                   ;   
+ ;                                                                                   ;
+ ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                         ;
+ ;                                                                                   ;
+ ; KBIP7 - KBIP4 habilitados como kbi detectando flanco y nivel alto                 ;
+ ; PTD7 PTD3 PTD2 PTG4                                                               ;
+ ;                                                                                   ;
+ ;                                                                                   ;
+ ;***********************************************************************************;           
+kbi_conf:
+			lda	  #%11110001
+			sta	  KBI1SC		;1 IE=0, MOD=1, rising lvl 7-4
+			
+			lda   #%10001100
+			sta   PTDPE		;3 Configurar pullup de los pines ausar
+			lda	  #%00010000
+			sta	  PTGPE
+			
+			lda   #%11110000
+			sta	  KBI1PE		;4 PTB3 como KBI, configurar pin KBI a usar
+			lda	  KBI1SC
+			ora	  #%00000100
+			sta	  KBI1SC		;5 ACK=1
+			lda	  KBI1SC
+			ora	  #%00000011
+			sta	  KBI1SC		;6 IE=1, MOD=1
+			rts
+
+delay: 	
+rt1:		psha
+			lda		#$ff
+rt2:		
+			dbnza	rt2
+			pula
+			dbnza	rt1
+			rts
