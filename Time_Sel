@@ -4,7 +4,7 @@
 ;* Microcontroladores 2018-I                                       *
 ;* Programador:                                                    *
 ;* -Sebastian Cepeda Espinosa                                      *
-;* -Javier Mauricio Pinilla Garcia                    		       *
+;* -Javier Mauricio Pinilla Garcia                    		   *
 ;* Version: 1.0                                                    *
 ;* Microcontrolador: MC9S08QG8CPBE                                 *
 ;* Codigo para usar seleccionar y modificar los tiempos de cada    *
@@ -248,7 +248,14 @@ ver1:		NOP
 			brset	0,col,num4	;col 1 = 1
 			brset	1,col,num5	;col 2 = 1
 			brset	2,col,num6	;col 3 = 1
-			brset	3,col,B_key 	;col 4 = 1
+			lda		PTBD
+			and		#%00001000
+			cmp		col
+			beq     B_key0
+			bne     ver1_1
+B_key0:		jsr 	B_key
+ver1_1:		jsr     clrfkbi
+			;brset	3,col,B_key ;col 4 = 1
 			jsr    clrfkbi
 
 ver2:		lda		#$03
@@ -274,7 +281,7 @@ num1:		lda		#$01
 			
 num2:		lda		#$02
 			sta		numero
-			bra 	clrfkbi
+			jsr 	clrfkbi
 			
 num3:		lda		#$03
 			sta		numero
@@ -308,6 +315,20 @@ num0:		lda		#$00
 			sta		numero
 			jmp 	clrfkbi
 
+pound:		;team goal 2
+
+			lda		scoreB
+			add		#$01
+			sta		scoreB
+			jmp 	clrfkbi
+
+star:		;team goal 1
+			lda		scoreA
+			add		#$01
+			sta		scoreA
+			jmp 	clrfkbi
+			
+
 A_key:			;start
 			lda     #$00
 			sta		pht
@@ -315,6 +336,11 @@ A_key:			;start
 			lda     #$01
 			sta		scores
 			jmp 	clrfkbi
+
+D_key:			;reset
+			jmp 	clrfkbi
+			
+			
 			
 C_key:			;HT
 			lda #$01
@@ -336,21 +362,8 @@ cs22:
 			sta numh
             jmp 	clrfkbi
             
-D_key:			;reset
-			jmp 	clrfkbi
-			
-star:		;team goal 1
-			lda		scoreA
-			add		#$01
-			sta		scoreA
-			jmp 	clrfkbi
-			
-pound:		;team goal 2
 
-			lda		scoreB
-			add		#$01
-			sta		scoreB
-			jmp 	clrfkbi
+
 
 B_key:			;rotar entre tiempos
 			lda #$00
@@ -438,9 +451,9 @@ clrfkbi_extra:
 
 
  ;***********************************************************************************;
- ;			                 Configuracion del KBI                                   ;   
+ ;			         Configuracion del KBI                               ;   
  ;                                                                                   ;
- ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                         ;
+ ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                        ;
  ;                                                                                   ;
  ; KBIP7 - KBIP4 habilitados como kbi detectando flanco y nivel alto                 ;
  ; PTD7 PTD3 PTD2 PTG4                                                               ;
