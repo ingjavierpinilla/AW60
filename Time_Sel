@@ -370,11 +370,7 @@ cs22:
 
 
 B_key:			;rotar entre tiempos
-			lda #$00
-			sta numa
-			sta numb
-			sta numc
-			sta numd
+			
 			
 			lda #$01
 			cmp	t_sel
@@ -392,7 +388,7 @@ cs1:		lda numa		; si sel_tiempo estaba en 1 guarda los datos de numa-numd en des
 			
 			lda #$00
 			sta	t_sel
-			bra clrfkbi
+			jmp cs3
 		
 cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en periodo
 			sta	period_minh
@@ -405,6 +401,13 @@ cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en
 					
 			lda #$01
 			sta	t_sel
+			jmp cs3
+			
+cs3:			lda #$00
+			sta numa
+			sta numb
+			sta numc
+			sta numd
 			jmp clrfkbi
 			
 clrfkbi:	lda		#$00
