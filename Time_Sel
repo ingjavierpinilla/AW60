@@ -348,7 +348,11 @@ C_key:			;HT
 			beq cs11
 			bne	cs22
 		
-cs11:					
+cs11:			
+			lda numg
+			sta	extra_minh
+			lda numh
+			sta	extra_minl
 			lda #$00
 			sta	extra
 			bra clrfkbi
