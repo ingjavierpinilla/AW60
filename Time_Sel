@@ -185,6 +185,9 @@ _Startup:
 
 mainLoop:
             bset KBI1SC_KBIE,KBI1SC
+	    lda   #$01
+			cmp   fkbi
+			beq   ver0
 
 rows:
             NOP
@@ -343,6 +346,9 @@ D_key:			;reset
 			
 			
 C_key:			;HT
+			lda #$00
+			sta	pht
+			sta	scores
 			lda #$01
 			cmp	extra
 			beq cs11
@@ -355,12 +361,13 @@ cs11:
 			sta	extra_minl
 			lda #$00
 			sta	extra
+			lda #$01
+			sta	scores
 			bra clrfkbi
 		
 cs22:					
 			lda #$01
 			sta	extra
-			jmp clrfkbi
 			lda #$00
 			sta numg
 			sta numh
