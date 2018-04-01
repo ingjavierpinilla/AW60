@@ -4,7 +4,7 @@
 ;* Microcontroladores 2018-I                                       *
 ;* Programador:                                                    *
 ;* -Sebastian Cepeda Espinosa                                      *
-;* -Javier Mauricio Pinilla Garcia                    		   *
+;* -Javier Mauricio Pinilla Garcia                    		       *
 ;* Version: 1.0                                                    *
 ;* Microcontrolador: MC9S08QG8CPBE                                 *
 ;* Codigo para usar seleccionar y modificar los tiempos de cada    *
@@ -216,6 +216,9 @@ _Startup:
 
 mainLoop:
             bset KBI1SC_KBIE,KBI1SC
+            lda   #$01
+			cmp   fkbi
+			beq   ver0
 
 rows:
             NOP
@@ -482,9 +485,9 @@ clrfkbi_extra:
 
 
  ;***********************************************************************************;
- ;			                 Configuracion del KBI                       ;   
+ ;			                 Configuracion del KBI                                   ;   
  ;                                                                                   ;
- ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                        ;
+ ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                         ;
  ;                                                                                   ;
  ; KBIP7 - KBIP4 habilitados como kbi detectando flanco y nivel alto                 ;
  ; PTD7 PTD3 PTD2 PTG4                                                               ;
