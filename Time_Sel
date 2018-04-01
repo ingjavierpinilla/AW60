@@ -90,10 +90,6 @@ kbirutina:
         lda		#$01
         bsr		delay
         
-        bclr 	7,PTDDD	
-            bclr 	3,PTDDD	
-            bclr 	2,PTDDD	
-            bclr 	4,PTGDD
         lda		PTGD
         asra
         asra
