@@ -4,7 +4,7 @@
 ;* Microcontroladores 2018-I                                       *
 ;* Programador:                                                    *
 ;* -Sebastian Cepeda Espinosa                                      *
-;* -Javier Mauricio Pinilla Garcia                    		   *
+;* -Javier Mauricio Pinilla Garcia                    		       *
 ;* Version: 1.0                                                    *
 ;* Microcontrolador: MC9S08QG8CPBE                                 *
 ;* Codigo para usar seleccionar y modificar los tiempos de cada    *
@@ -40,6 +40,7 @@ fkbi:		ds.b   1	; flag kbi
 rowa:		ds.b   1	; row actual
 row:		ds.b   1	; row activada cuando se dio la interrupcion
 col:		ds.b   1   ; col activada cuando se dio la interrupcion
+colaux:		ds.b   1
 
 times: SECTION SHORT
 
@@ -88,7 +89,35 @@ kbirutina:
         bsr		delay
         lda		#$01
         bsr		delay
-        lda		PTBD
+        
+        bclr 	7,PTDDD	
+            bclr 	3,PTDDD	
+            bclr 	2,PTDDD	
+            bclr 	4,PTGDD
+        lda		PTGD
+        asra
+        asra
+        asra
+        asra    
+        sta		colaux
+        
+        lda		PTDD
+        asra
+        and		#%00000110
+        ora		colaux
+        sta		colaux
+        
+        lda		PTDD
+        
+        asra
+        asra
+        asra
+        asra
+        and		#%00001000
+        ora		colaux
+        sta		colaux
+        
+        lda		colaux
         and		#%00001111
         sta		col        ; asigna a columna los ultimos 4 bits de PTB 
 
@@ -164,17 +193,19 @@ _Startup:
 			lda   #$0A
             sta   numero
             ;0 in
-            lda		#%11110000 ;     R ports, col
-			;		  |||||||+-col 1
-            ;		  ||||||+--col 2
-            ;         |||||+---col 3 
-            ;         ||||+----col 4 
+            lda		PTBDD
+            ora		#%11110000
             ;		  ||||	         W ports, rows
             ;		  |||+-----row 1
             ;		  ||+------row 2
             ;		  |+-------row 3		
-            ;		  +--------row 4					
+            ;		  +--------row 4
+            					
             sta		PTBDD
+            bclr 	7,PTDDD	
+            bclr 	3,PTDDD	
+            bclr 	2,PTDDD	
+            bclr 	4,PTGDD
      
        
             
@@ -185,9 +216,6 @@ _Startup:
 
 mainLoop:
             bset KBI1SC_KBIE,KBI1SC
-	    lda   #$01
-			cmp   fkbi
-			beq   ver0
 
 rows:
             NOP
@@ -346,28 +374,20 @@ D_key:			;reset
 			
 			
 C_key:			;HT
-			lda #$00
-			sta	pht
-			sta	scores
 			lda #$01
 			cmp	extra
 			beq cs11
 			bne	cs22
 		
-cs11:			
-			lda numg
-			sta	extra_minh
-			lda numh
-			sta	extra_minl
+cs11:					
 			lda #$00
 			sta	extra
-			lda #$01
-			sta	scores
 			bra clrfkbi
 		
 cs22:					
 			lda #$01
 			sta	extra
+			jmp clrfkbi
 			lda #$00
 			sta numg
 			sta numh
@@ -377,7 +397,11 @@ cs22:
 
 
 B_key:			;rotar entre tiempos
-			
+			lda #$00
+			sta numa
+			sta numb
+			sta numc
+			sta numd
 			
 			lda #$01
 			cmp	t_sel
@@ -395,7 +419,7 @@ cs1:		lda numa		; si sel_tiempo estaba en 1 guarda los datos de numa-numd en des
 			
 			lda #$00
 			sta	t_sel
-			jmp cs3
+			bra clrfkbi
 		
 cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en periodo
 			sta	period_minh
@@ -408,13 +432,6 @@ cs2:		lda numa       ;si sel_tiempo estaba en 1 guarda los datos de numa-numd en
 					
 			lda #$01
 			sta	t_sel
-			jmp cs3
-			
-cs3:			lda #$00
-			sta numa
-			sta numb
-			sta numc
-			sta numd
 			jmp clrfkbi
 			
 clrfkbi:	lda		#$00
@@ -465,9 +482,9 @@ clrfkbi_extra:
 
 
  ;***********************************************************************************;
- ;			         Configuracion del KBI                               ;   
+ ;			                 Configuracion del KBI                                   ;   
  ;                                                                                   ;
- ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                        ;
+ ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                         ;
  ;                                                                                   ;
  ; KBIP7 - KBIP4 habilitados como kbi detectando flanco y nivel alto                 ;
  ; PTD7 PTD3 PTD2 PTG4                                                               ;
