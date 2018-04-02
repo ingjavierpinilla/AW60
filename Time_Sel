@@ -88,30 +88,19 @@ kbirutina:
         lda		#$01
         bsr		delay
         lda		#$01
-        bsr		delay
+        bsr		delay	
         
         lda		PTGD
         asra
-        asra
-        asra
-        asra    
-        sta		colaux
-        
-        lda		PTDD
-        asra
-        and		#%00000110
+        and		#%00000011
         ora		colaux
         sta		colaux
         
         lda		PTDD
-        
-        asra
-        asra
-        asra
-        asra
-        and		#%00001000
+        and		#%00001100
         ora		colaux
         sta		colaux
+    	
         
         lda		colaux
         and		#%00001111
@@ -190,18 +179,19 @@ _Startup:
             sta   numero
             ;0 in
             lda		PTBDD
-            ora		#%11110000
-            ;		  ||||	         W ports, rows
-            ;		  |||+-----row 1
-            ;		  ||+------row 2
-            ;		  |+-------row 3		
-            ;		  +--------row 4
+            ora		#%00001111
+            ;		      ||||	         W ports, rows
+            ;		      |||+-----row 1
+            ;		      ||+------row 2
+            ;		      |+-------row 3		
+            ;		      +--------row 4
             					
             sta		PTBDD
-            bclr 	7,PTDDD;	R col4	
-            bclr 	3,PTDDD;	R col3		
-            bclr 	2,PTDDD;	R col2		
-            bclr 	4,PTGDD;	R col1	
+            	
+            bclr 	3,PTDDD;	R col4		
+            bclr 	2,PTDDD;	R col3
+            bclr 	2,PTGDD;	R col2		
+            bclr 	1,PTGDD;	R col1	
      
        
             
@@ -220,7 +210,7 @@ rows:
             NOP
             lda		PTBD
             and		#%11110000
-            ora		#%00000100	;row 1 = 1
+            ora		#%00000001	;row 1 = 1
 			sta		PTBD
 			lda     #$01
 			sta		rowa
@@ -228,7 +218,7 @@ rows:
 			NOP
 			lda		PTBD
             and		#%11110000
-            ora		#%00000101	;row 2 = 1
+            ora		#%00000010	;row 2 = 1
 			sta		PTBD
 			lda     #$02
 			sta		rowa
@@ -236,7 +226,7 @@ rows:
 			NOP
 			lda		PTBD
             and		#%11110000
-            ora		#%00000110	;row 3 = 1
+            ora		#%00000100	;row 3 = 1
 			sta		PTBD
 			lda     #$03
 			sta		rowa
@@ -244,7 +234,7 @@ rows:
 			NOP
 			lda		PTBD
             and		#%11110000
-            ora		#%00000111	;row 4 = 1
+            ora		#%00001000	;row 4 = 1
 			sta		PTBD
 			lda     #$04
 			sta		rowa
@@ -381,13 +371,15 @@ C_key:			;HT
 cs11:					
 			lda #$00
 			sta	extra
+			lda #$01
+			sta	scores
 			bra clrfkbi
 		
 cs22:					
 			lda #$01
 			sta	extra
-			jmp clrfkbi
 			lda #$00
+			sta	scores
 			sta numg
 			sta numh
             jmp 	clrfkbi
@@ -470,10 +462,11 @@ clrfkbi_scores:
 clrfkbi_extra:
 			lda 	numh
 			sta		numg
+			sta		extra_minh
 			
 			lda 	numero
 			sta		numh
-			
+			sta		extra_minl
 			jsr		mainLoop
 
 
@@ -483,23 +476,23 @@ clrfkbi_extra:
  ;***********************************************************************************;
  ;			                 Configuracion del KBI                                   ;   
  ;                                                                                   ;
- ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                         ;
+ ; KBI1SC_MOD= 1b1 --> detecta flanco y nivel                                        ;
  ;                                                                                   ;
- ; KBIP7 - KBIP4 habilitados como kbi detectando flanco y nivel alto                 ;
- ; PTD7 PTD3 PTD2 PTG4                                                               ;
- ;                                                                                   ;
- ;                                                                                   ;
+ ; KBIP5 - KBIP6 habilitados como kbi detectando flanco y nivel alto                 ;
+ ; D2      D3                                                                        ;
+ ; KBIP1 - KBIP2 habilitados como kbi detectando flanco y nivel bajo                 ;
+ ; G1      G2                                                                        ;
  ;***********************************************************************************;           
 kbi_conf:
-			lda	  #%11110001
-			sta	  KBI1SC		;1 IE=0, MOD=1, rising lvl 7-4
+			lda	  #%01100001
+			sta	  KBI1SC		;1 IE=0, MOD=1, rising lvl 5-6
 			
-			lda   #%10001100
+			lda   #%00001100
 			sta   PTDPE		;3 Configurar pullup de los pines ausar
-			lda	  #%00010000
+			lda	  #%00000110
 			sta	  PTGPE
 			
-			lda   #%11110000
+			lda   #%01100110
 			sta	  KBI1PE		;4 PTB3 como KBI, configurar pin KBI a usar
 			lda	  KBI1SC
 			ora	  #%00000100
