@@ -265,10 +265,10 @@ ver1:		NOP
 			brset	1,col,num5	;col 2 = 1
 			brset	2,col,num6	;col 3 = 1
 			brset   3,col,B_key0
-B_key0:		jsr 	B_key
+B_key0:		jmp 	B_key
 
 			;brset	3,col,B_key ;col 4 = 1
-			jmp    clrfkbi
+
 
 ver2:		lda		#$03
 			cmp		row
@@ -277,23 +277,22 @@ ver2:		lda		#$03
 			brset	1,col,num8	;col 2 = 1
 			brset	2,col,num9	;col 3 = 1
 			brset	3,col,C_key  	;col 4 = 1
-            jsr    clrfkbi
             
 ver3:			
 			brset	0,col,star	;col 1 = 1
 			brset	1,col,num0	;col 2 = 1
 			brset	2,col,pound	;col 3 = 1
 			brset	3,col,D_key ;col 4 = 1
-			jmp    clrfkbi
+
 
 			
 num1:		lda		#$01
 			sta		numero
-			jsr 	clrfkbi
+			jmp 	clrfkbi
 			
 num2:		lda		#$02
 			sta		numero
-			jsr 	clrfkbi
+			jmp 	clrfkbi
 			
 num3:		lda		#$03
 			sta		numero
