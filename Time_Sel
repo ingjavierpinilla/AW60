@@ -257,9 +257,9 @@ ver0:
 			cmp		col
 			beq     A_key0
 			bne     ver0_1
-A_key0:		jsr 	A_key
+A_key0:		jmp 	A_key
 			;brset	3,col,A_key ;col 4 = 1
-ver0_1:		jsr     clrfkbi
+ver0_1:		jmp     clrfkbi
 			
 ver1:		NOP
 			lda		#$02
@@ -276,7 +276,7 @@ ver1:		NOP
 B_key0:		jsr 	B_key
 ver1_1:		jsr     clrfkbi
 			;brset	3,col,B_key ;col 4 = 1
-			jsr    clrfkbi
+			jmp    clrfkbi
 
 ver2:		lda		#$03
 			cmp		row
@@ -292,7 +292,7 @@ ver3:
 			brset	1,col,num0	;col 2 = 1
 			brset	2,col,pound	;col 3 = 1
 			brset	3,col,D_key ;col 4 = 1
-			jsr    clrfkbi
+			jmp    clrfkbi
 
 			
 num1:		lda		#$01
@@ -449,14 +449,14 @@ clrfkbi_B:
 			sta		numd
 			
 			
-			jsr		mainLoop
+			jmp		mainLoop
 
 clrfkbi_scores:
 			lda		scoreA
 			sta		nume
 			lda		scoreB
 			sta		numf
-			jsr		mainLoop
+			jmp		mainLoop
 			
 			
 clrfkbi_extra:
@@ -467,7 +467,7 @@ clrfkbi_extra:
 			lda 	numero
 			sta		numh
 			sta		extra_minl
-			jsr		mainLoop
+			jmp		mainLoop
 
 
 
