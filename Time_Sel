@@ -92,6 +92,7 @@ kbirutina:
         
         lda		PTGD
         asra
+	nega
         and		#%00000011
         ora		colaux
         sta		colaux
@@ -104,7 +105,7 @@ kbirutina:
         
         lda		colaux
         and		#%00001111
-        sta		col        ; asigna a columna los ultimos 4 bits de PTB 
+        sta		col        ; 
 
 loop1:  ;brset 0,PTAD,loop1 
         ;brset 1,PTAD,loop1	
@@ -252,14 +253,9 @@ ver0:
 			brset	0,col,num1	;col 1 = 1
 			brset	1,col,num2	;col 2 = 1
 			brset	2,col,num3	;col 3 = 1
-			lda		PTBD
-			and		#%00001000
-			cmp		col
-			beq     A_key0
-			bne     ver0_1
+			brset   3,col,A_key0
 A_key0:		jmp 	A_key
 			;brset	3,col,A_key ;col 4 = 1
-ver0_1:		jmp     clrfkbi
 			
 ver1:		NOP
 			lda		#$02
@@ -268,13 +264,9 @@ ver1:		NOP
 			brset	0,col,num4	;col 1 = 1
 			brset	1,col,num5	;col 2 = 1
 			brset	2,col,num6	;col 3 = 1
-			lda		PTBD
-			and		#%00001000
-			cmp		col
-			beq     B_key0
-			bne     ver1_1
+			brset   3,col,B_key0
 B_key0:		jsr 	B_key
-ver1_1:		jsr     clrfkbi
+
 			;brset	3,col,B_key ;col 4 = 1
 			jmp    clrfkbi
 
