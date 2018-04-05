@@ -467,8 +467,8 @@ clrfkbi_extra:
 			sta		extra_minl
 			jmp		mainLoop
 
-escritura:	
-			lda	  PTED
+escritura:						;Subrutina de escritura de displays 7-segmentos. Multiplexación.
+			lda	  PTED			;se escribe la entrada al integrado: BCD-DECIMAL
 			and	  #%00001111
 			ora	  #%00000000
 			sta	  PTED
@@ -557,7 +557,7 @@ escritura:
 			jsr   retardo
 			rts
 			
-escnum:		cmp	  #$00
+escnum:		cmp	  #$00			Verificación del número (variable para cada display: numa,numb,numc....)
 			beq   esc0
 n1:			cmp	  #$01
 			beq   esc1
@@ -579,70 +579,70 @@ n9:			cmp	  #$09
 			beq   esc9
 nf:			rts	
 
-;23456789012345678901234567890123456789012345
-esc0:       lda   PTCD 			;Escribir 8b0000xxxx
+;23456789012345678901234567890123456789012345			Escritura del empaquetado BCD-7SEG
+esc0:       lda   PTCD 			;Escribir 0
 			and   #%11110000
 			sta	  PTCD
 			lda   escrito	
 			jmp   n1
 				
-esc1: 		lda   PTCD 			;Escribir 8b0001xxxx
+esc1: 		lda   PTCD 			;Escribir 1
 			and   #%11110000
 			ora   #%00000001
 			sta	  PTCD	
 			lda   escrito
 			jmp   n2
 			
-esc2:		lda   PTCD 			;Escribir 8b0010xxxx
+esc2:		lda   PTCD 			;Escribir 2
 			and   #%11110000
 			ora   #%00000010
 			sta	  PTCD	
 			lda   escrito
 			jmp   n3
  
-esc3:		lda   PTCD 			;Escribir 8b0011xxxx
+esc3:		lda   PTCD 			;Escribir 3
 			and   #%11110000
 			ora   #%00000011
 			sta	  PTCD	
 			lda   escrito
 			jmp   n4
 			
-esc4:		lda   PTCD 			;Escribir 8b0100xxxx
+esc4:		lda   PTCD 			;Escribir 4
 			and   #%11110000
 			ora   #%00000100
 			sta	  PTCD	
 			lda   escrito
 			jmp   n5
  
-esc5:		lda   PTCD 			;Escribir 8b0101xxxx
+esc5:		lda   PTCD 			;Escribir 5
 			and   #%11110000
 			ora   #%00000101
 			sta	  PTCD	
 			lda   escrito
 			jmp   n6
  
-esc6:		lda   PTCD 			;Escribir 8b0110xxxx
+esc6:		lda   PTCD 			;Escribir 6
 			and   #%11110000
 			ora   #%00000110
 			sta	  PTCD	
 			lda   escrito
 			jmp   n7
  
-esc7:		lda   PTCD 			;Escribir 8b0111xxxx
+esc7:		lda   PTCD 			;Escribir 7
 			and   #%11110000
 			ora   #%00000111
 			sta	  PTCD	
 			lda   escrito
 			jmp   n8
  
-esc8: 		lda   PTCD 			;Escribir 8b1000xxxx
+esc8: 		lda   PTCD 			;Escribir 8
 			and   #%11110000
 			ora   #%00001000
 			sta	  PTCD	
 			lda   escrito
 			jmp   n9
 			
-esc9: 		lda   PTCD 			;Escribir 8b1000xxxx
+esc9: 		lda   PTCD 			;Escribir 9
 			and   #%11110000
 			ora   #%00001001
 			sta	  PTCD
