@@ -89,6 +89,11 @@ kbirutina:
         bsr		retardo
         lda		#$01
         bsr		retardo
+	;*********************************************************************************
+	; se realiza la lectura de los puertos PTGD y PTDD que contienen las entradas 
+	; provenientes del teclado, la correspondiente informacion se asigna en la 
+	; variable col que sera usada para verificar que tecla fue pulsada
+	;*********************************************************************************
         
         lda     #$00
         sta		colaux
@@ -150,15 +155,15 @@ _Startup:
             sta   PTCDD
             ;inicialización de variables
             lda	  #$00
-			sta	  numa
-			sta	  numb
-			sta	  numc
-			sta	  numd
-			sta	  nume
-			sta	  numf
-			sta	  numg
-			sta	  numh
-			
+	    sta	  numa
+	    sta	  numb
+	    sta	  numc
+	    sta	  numd
+	    sta	  nume
+	    sta	  numf
+	    sta	  numg
+	    sta	  numh
+		
             lda   #$01
             sta	  pht ; de inicio se configuran duracion del periodo y descanso
             lda	  #$00
@@ -166,31 +171,31 @@ _Startup:
             sta	  scoreB
             sta	  scores
             sta   extra
-			sta	  fkbi
-			sta	  row
-			sta	  rowa
-			sta	  col
-			sta   t_sel
-			sta   period_minh
-			sta   period_minl
-			sta   period_segh
-			sta   period_segl
-			sta   ht_minh
-			sta   ht_minl
-			sta   ht_segh
-			sta   ht_segl
-			sta   extra_minh
-			sta   extra_minl
-			sta    period_minh
+	    sta	  fkbi
+	    sta	  row
+	    sta	  rowa
+	    sta	  col
+	    sta   t_sel
+	    sta   period_minh
+	    sta   period_minl
+	    sta   period_segh
+	    sta   period_segl
+	    sta   ht_minh
+	    sta   ht_minl
+	    sta   ht_segh
+	    sta   ht_segl
+	    sta   extra_minh
+	    sta   extra_minl
+	    sta    period_minh
             sta    period_minl
             sta    period_segh
             sta    period_segl
             sta	   period1_flag
 			
 			lda   #$0A
-            sta   numero
-            lda	  PTBDD
-            ora	  #%00001111
+            sta   	numero
+            lda	 	 PTBDD
+            ora	  	#%00001111
             ;		      ||||	         W ports, rows
             ;		      |||+-----row 1
             ;		      ||+------row 2
@@ -217,6 +222,9 @@ cronoreturn:
 			cmp   fkbi
 			beq   ver0
 			
+;******************************************************************************************
+; En la etiqueta rows se reliza la multiplexacion de la fila activada en el teclado
+;******************************************************************************************
 rows:
             NOP
             lda		PTBD
@@ -250,7 +258,14 @@ rows:
 			lda     #$04
 			sta		rowa
 
-            BRA    mainLoop
+            ;BRA    mainLoop
+
+;***************************************************************************************************************
+; las rutinas verx y cada una de las teclas se encargan de verificar que tecla fue pulsada en el teclado
+; y tomar la accion correspondiente de acuerdo a esto, posteriormente de acuerdo al estado en que se 
+; encuentre la maquina se realizara la escritura en diferentes displays.
+; el funcionamiento de esta seccion puede ser entendido de mejor forma con los diagramas 1 y 3
+;***************************************************************************************************************
 
 
 ver0:
@@ -447,14 +462,14 @@ clrfkbi_B:
 			sta		numd
 			
 			
-			jmp		mainLoop
+			jmp		escritura
 
 clrfkbi_scores:
 			lda		scoreA
 			sta		nume
 			lda		scoreB
 			sta		numf
-			jmp		mainLoop
+			jmp		escritura
 			
 			
 clrfkbi_extra:
@@ -465,7 +480,7 @@ clrfkbi_extra:
 			lda 	numero
 			sta		numh
 			sta		extra_minl
-			jmp		mainLoop
+			jmp		escritura
 
 escritura:						;Subrutina de escritura de displays 7-segmentos. Multiplexación.
 			lda	  PTED			;se escribe la entrada al integrado: BCD-DECIMAL
@@ -648,6 +663,12 @@ esc9: 		lda   PTCD 			;Escribir 9
 			sta	  PTCD
 			lda   escrito	
 			jmp   nf
+			
+;***********************************************************************************************************
+; La siguiente seccion se encarga de verificar los digitos del reloj del partido, asi, si los segundos
+; llegan a 9 se procedera a escribir 10 en lugar de A en un solo display; una funcion similar se 
+; implemento a los minutos, estableciendo un limite de 45 minutos + el tiempo extra que se asigne
+;******************************************************************************************************
 			
 crono:
 			lda 	period_segl
