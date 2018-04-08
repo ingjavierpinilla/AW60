@@ -86,7 +86,7 @@ interrupt Vrti1 void rutina_RTI(void){
 
 
 void led_amarillo(void){
-	
+	LED_VERDE=OFF;
 	switch (estado) {
 		case 1:
 			asm NOP
