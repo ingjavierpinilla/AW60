@@ -1,0 +1,111 @@
+#include <hidef.h> /* for EnableInterrupts macro */
+#include "derivative.h" /* include peripheral declarations */
+
+#define Vkbi1 22
+#define	Vrti1 25
+/* define cuando un led esta encendido o apagado*/
+#define ON	1
+#define OFF	0
+
+/* define entrada y salida*/
+#define OUT	1
+#define IN	0
+
+/* define los leds*/
+#define LED_VERDE PTBD_PTBD0
+#define LED_AMARILLO PTBD_PTBD1
+ /*define los pulsadores*/
+#define PERSONA PTGD_PTGD0
+#define PUERTA PTGD_PTGD1
+#define VENT1 PTGD_PTGD2
+#define VENT2 PTGD_PTGD3
+
+
+
+
+
+void configuracion (void);
+void configuracion_KBI (void);
+void configuracion_RTI(void);
+void led_amarillo(void);
+
+
+int estado,count;
+void main(void) {
+	configuracion();
+	configuracion_KBI();
+	configuracion_RTI();
+  EnableInterrupts;
+
+
+
+
+  for(;;) {
+    led_amarillo();
+    SRTISC_RTIE=1;
+    KBI1SC_KBIE=1;
+  } 
+
+}
+
+void configuracion (void){
+	SOPT=0x52;
+	PTGDD=!(PTGDD_PTGDD0_MASK|PTGDD_PTGDD1_MASK|PTGDD_PTGDD2_MASK|PTGDD_PTGDD3_MASK);
+	PTGPE=(PTGPE_PTGPE0_MASK|PTGPE_PTGPE1_MASK|PTGPE_PTGPE2_MASK|PTGPE_PTGPE3_MASK);
+	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
+	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
+}
+
+void configuracion_KBI (void){
+	KBI1SC=(KBI1SC_KBIMOD_MASK|KBI1SC_KBIE_MASK|KBI1SC_KBACK_MASK);	
+	KBIPE=(KBIPE_KBIPE0_MASK|KBIPE_KBIPE1_MASK|KBIPE_KBIPE2_MASK|KBIPE_KBIPE3_MASK);
+}
+
+interrupt Vkbi1 void rutina_KBI(void){
+	KBI1SC=(KBI1SC_KBACK_MASK|!KBI1SC_KBIE_MASK);
+	if ((PERSONA|PUERTA|VENT1|VENT2)!=0) {
+		LED_VERDE=ON;
+		LED_AMARILLO=OFF;
+		estado=0;
+	} else if ((PERSONA)==0) {
+		estado=1;
+	} else {
+		estado=2;
+	}
+}
+
+void configuracion_RTI (void){
+	SRTISC=(SRTISC_RTIS0_MASK|SRTISC_RTIS1_MASK|SRTISC_RTIS2_MASK|!SRTISC_RTICLKS_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
+}
+
+interrupt Vrti1 void rutina_RTI(void){
+	SRTISC=(SRTISC_RTIACK_MASK|!SRTISC_RTIE_MASK);
+	count+=1;
+}
+
+
+
+void led_amarillo(void){
+	
+	switch (estado) {
+		case 1:
+			asm NOP
+			break;
+			
+		case 2:
+			do {
+				LED_AMARILLO=!LED_AMARILLO;
+				count=0;
+			} while (count!=1);
+			break;
+			
+		case 3:
+			do {
+				LED_AMARILLO=!LED_AMARILLO;
+				count=0;
+			} while (count!=2);
+			
+			break;
+	}
+	
+}
