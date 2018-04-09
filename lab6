@@ -24,24 +24,33 @@ void configuracion (void);
 void configuracion_KBI (void);
 void configuracion_RTI(void);
 void led_amarillo(void);
+void delay(int x);
 
+int estado, cont1, cont2, contaux, contauxaux;
 
-int estado,count;
 void main(void) {
 	configuracion();
 	configuracion_KBI();
 	configuracion_RTI();
-  EnableInterrupts;
-
-
-
-
+	EnableInterrupts;
+	
+	cont1=0;
+	cont2=0;
+	contaux=0;
+	estado=0;
+	
   for(;;) {
     led_amarillo();
     SRTISC_RTIE=1;
     KBI1SC_KBIE=1;
   } 
 
+}
+
+void delay(int x){
+	int n;
+	for(n=0 ; n<x ; n++) {
+	}
 }
 
 void configuracion (void){
@@ -55,17 +64,16 @@ void configuracion (void){
 }
 
 void configuracion_KBI (void){
-	KBI1SC=(KBI1SC_KBIMOD_MASK|KBI1SC_KBIE_MASK|KBI1SC_KBACK_MASK);	
+	KBI1SC=(KBI1SC_KBIMOD_MASK|KBI1SC_KBIE_MASK|KBI1SC_KBACK_MASK);
+	delay(150);
 	KBI1PE=(KBIPE_KBIPE1_MASK|KBIPE_KBIPE2_MASK|KBIPE_KBIPE5_MASK|KBIPE_KBIPE6_MASK);
 }
 
 interrupt Vkbi1 void rutina_KBI(void){
 	KBI1SC=(KBI1SC_KBACK_MASK|!KBI1SC_KBIE_MASK);
-	if ((PERSONA|PUERTA|VENT1|VENT2)!=0) {
-		LED_VERDE=ON;
-		LED_AMARILLO=OFF;
+	if ((!PERSONA|!PUERTA|!VENT1|!VENT2)!=0) {
 		estado=0;
-	} else if ((PERSONA)==0) {
+	} else if ((PERSONA)!=1) {
 		estado=1;
 	} else {
 		estado=2;
@@ -78,7 +86,17 @@ void configuracion_RTI (void){
 
 interrupt Vrti1 void rutina_RTI(void){
 	SRTISC=(SRTISC_RTIACK_MASK|!SRTISC_RTIE_MASK);
-	count+=1;
+	contaux=cont1;
+	if(cont1==0){
+		cont1=1;
+	}else{cont1=0;
+	}
+	if(contaux<cont1){
+		if(cont2==0){
+				cont2=1;
+		}else{cont2=0;
+		}
+	}
 }
 
 
@@ -86,23 +104,31 @@ interrupt Vrti1 void rutina_RTI(void){
 void led_amarillo(void){
 	
 	switch (estado) {
+		case 0:
+			LED_VERDE=ON;
+			LED_AMARILLO=OFF;
+			break;
+			
 		case 1:
-			asm NOP
+			
+				LED_VERDE=OFF;
+				if(cont1==1){
+					LED_AMARILLO=ON;
+				}
+				if(cont1==0){
+					LED_AMARILLO=OFF;
+				}
 			break;
 			
 		case 2:
-			do {
-				LED_AMARILLO=!LED_AMARILLO;
-				count=0;
-			} while (count!=1);
-			break;
 			
-		case 3:
-			do {
-				LED_AMARILLO=!LED_AMARILLO;
-				count=0;
-			} while (count!=2);
-			
+				LED_VERDE=OFF;
+				if(cont2==1){
+					LED_AMARILLO=ON;
+				}
+				if(cont2==0){
+					LED_AMARILLO=OFF;
+				}
 			break;
 	}
 	
