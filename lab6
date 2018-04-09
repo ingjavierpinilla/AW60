@@ -23,7 +23,7 @@
 void configuracion (void);
 void configuracion_KBI (void);
 void configuracion_RTI(void);
-void led_amarillo(void);
+void ver_KBIF(void);
 void delay(int x);
 
 int estado, cont1, cont2, contaux, contauxaux;
@@ -40,9 +40,9 @@ void main(void) {
 	estado=0;
 	
   for(;;) {
-    led_amarillo();
+    ver_KBIF();
 
-    KBI1SC_KBIE=1;
+    
   } 
 
 }
@@ -104,39 +104,46 @@ interrupt Vrti1 void rutina_RTI(void){
 		}else{cont2=0;
 		}
 	}
+	
+	
+	switch (estado) {
+			case 0:
+				LED_VERDE=ON;
+				LED_AMARILLO=OFF;
+				break;
+				
+			case 1:
+				
+					LED_VERDE=OFF;
+					if(cont1==1){
+						LED_AMARILLO=ON;
+					}
+					if(cont1==0){
+						LED_AMARILLO=OFF;
+					}
+				break;
+				
+			case 2:
+				
+					LED_VERDE=OFF;
+					if(cont2==1){
+						LED_AMARILLO=ON;
+					}
+					if(cont2==0){
+						LED_AMARILLO=OFF;
+					}
+				break;
+		}
+	
 }
 
 
 
-void led_amarillo(void){
-	
-	switch (estado) {
-		case 0:
-			LED_VERDE=ON;
-			LED_AMARILLO=OFF;
-			break;
-			
-		case 1:
-			
-				LED_VERDE=OFF;
-				if(cont1==1){
-					LED_AMARILLO=ON;
-				}
-				if(cont1==0){
-					LED_AMARILLO=OFF;
-				}
-			break;
-			
-		case 2:
-			
-				LED_VERDE=OFF;
-				if(cont2==1){
-					LED_AMARILLO=ON;
-				}
-				if(cont2==0){
-					LED_AMARILLO=OFF;
-				}
-			break;
+void ver_KBIF(void){
+	if ((PERSONA&PUERTA&VENT1&VENT2)==1) {
+		estado=0;
+		KBI1SC_KBIE=1;
 	}
+	
 	
 }
