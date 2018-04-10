@@ -4,19 +4,15 @@
 
 
 void configuracion_RTI (void);
+void configuracion_ICG (void);
+void configuracion_puertos(void);
 
 void main(void) {
 	
-	SOPT=SOPT_COPT_MASK;
-	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
-	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
+	
 	configuracion_RTI();
-			
-	ICGC1=0;
-	ICGC1=(ICGC1_RANGE_MASK|ICGC1_REFS_MASK|ICGC1_CLKS0_MASK|ICGC1_CLKS1_MASK);
-	ICGC2=0;
-	ICGC2=(ICGC2_RFD2_MASK|ICGC2_MFD0_MASK|ICGC2_MFD1_MASK|ICGC2_MFD2_MASK);
-
+	void configuracion_ICG (void);	
+	
 	
 	
   EnableInterrupts;
@@ -34,6 +30,52 @@ interrupt Vrti1 void rutina_RTI(void){
 	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
 	PTBD_PTBD0=!PTBD_PTBD0;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// configura pines PTBD0 y PTBD1 como salidas y asigna el valor 0 de inicio
+//	SOPT
+// Bit 7 COPE = 0 COP watchdog timer disabled
+// Bit 6 COPT = 1 Long timeout period selected (218 cycles of BUSCLK).
+///////////////////////////////////////////////////////////////////////////////
+void configuracion_puertos(void){
+	SOPT=SOPT_COPT_MASK;
+	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
+	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
+	
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// ICGC1
+// Bit 7 HGO = 0 Configures oscillator for low power
+// Bit 6 RANGE = 1 Configures oscillator for high-frequency range; FLL prescale factor is 1
+// Bit 5 REFS = 1 Requests an oscillator
+// Bits 4:3 CLKS = 11 FLL engaged, external reference clock mode
+// Bit 2 OSCSTEN = 0 Disables the oscillator
+// Bit 1 LOCD = 0 Loss-of-clock detection enabled
+//
+// ***************************************************
+// ICGC2
+// Bit 7 LOLRE = 0 Generates an interrupt request on loss of lock
+// Bit 6:4 MFD = 111 Sets the MFD multiplication factor to 18
+// Bit 3 LOCRE = 0 Generates an interrupt request on loss of clock
+// Bit 2:0 RFD = 100 Sets the RFD division factor to ÷16
+/////////////////////////////////////////////////////////////////////////////////
+
+
+void configuracion_ICG (void){
+	ICGC1=0;
+	ICGC1=(ICGC1_RANGE_MASK|ICGC1_REFS_MASK|ICGC1_CLKS0_MASK|ICGC1_CLKS1_MASK);
+	ICGC2=0;
+	ICGC2=(ICGC2_RFD2_MASK|ICGC2_MFD0_MASK|ICGC2_MFD1_MASK|ICGC2_MFD2_MASK);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+//	bit5=1 usa señal de reloj externo 
+//	bit4=1 interrupciones RTI activadas
+//	bits 2:0 = 110 divide por 16384
+//
+/////////////////////////////////////////////////////////////////////////////////
 void configuracion_RTI (void){
 	SRTISC=(SRTISC_RTICLKS|!SRTISC_RTIS0_MASK|SRTISC_RTIS1_MASK|SRTISC_RTIS2_MASK|!SRTISC_RTICLKS_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
 }
