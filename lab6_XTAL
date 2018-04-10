@@ -1,0 +1,39 @@
+#include <hidef.h> /* for EnableInterrupts macro */
+#include "derivative.h" /* include peripheral declarations */
+#define	Vrti1 25
+
+
+void configuracion_RTI (void);
+
+void main(void) {
+	
+	SOPT=SOPT_COPT_MASK;
+	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
+	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
+	configuracion_RTI();
+			
+	ICGC1=0;
+	ICGC1=(ICGC1_RANGE_MASK|ICGC1_REFS_MASK|ICGC1_CLKS0_MASK|ICGC1_CLKS1_MASK);
+	ICGC2=0;
+	ICGC2=(ICGC2_RFD2_MASK|ICGC2_MFD0_MASK|ICGC2_MFD1_MASK|ICGC2_MFD2_MASK);
+
+	
+	
+  EnableInterrupts;
+  /* include your code here */
+
+  
+
+  for(;;) {
+	  
+  } /* loop forever */
+  /* please make sure that you never leave main */
+}
+
+interrupt Vrti1 void rutina_RTI(void){
+	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
+	PTBD_PTBD0=!PTBD_PTBD0;
+}
+void configuracion_RTI (void){
+	SRTISC=(SRTISC_RTICLKS|!SRTISC_RTIS0_MASK|SRTISC_RTIS1_MASK|SRTISC_RTIS2_MASK|!SRTISC_RTICLKS_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
+}
