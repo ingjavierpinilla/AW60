@@ -9,7 +9,8 @@ void configuracion_puertos(void);
 
 void main(void) {
 	
-	
+	SOPT=0;
+	SOPT=SOPT_COPT_MASK;
 	configuracion_RTI();
 	configuracion_ICG();	
 	
