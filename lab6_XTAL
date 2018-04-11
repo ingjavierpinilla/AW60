@@ -71,9 +71,9 @@ void configuracion_ICG (void){
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-//	bit5=1 usa señal de reloj externo 
-//	bit4=1 interrupciones RTI activadas
-//	bits 2:0 = 110 divide por 16384
+//	Bit 5 RTICLKS =1 usa señal de reloj externo 
+//	Bit 4 RTIE =1 interrupciones RTI activadas
+//	Bits 2:0 RTIS[2:0] = 110 divide por 16384
 //
 /////////////////////////////////////////////////////////////////////////////////
 void configuracion_RTI (void){
