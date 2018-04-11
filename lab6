@@ -21,52 +21,84 @@
 #define VENT2 PTDD_PTDD2
 
 void configuracion (void);
+void configuracion_RTI (void);
 void configuracion_KBI (void);
-void configuracion_RTI(void);
+void configuracion_ICG (void);
+void configuracion_puertos(void);
 void ver_KBIF(void);
 void delay(int x);
 
-int estado, cont1, cont2, contaux, contauxaux;
+int cont,estado, cont1, cont2, contaux, contauxaux;
 
 void main(void) {
-	configuracion();
-	configuracion_KBI();
+	
+	configuracion_ICG();
 	configuracion_RTI();
+	configuracion_KBI();
+	configuracion();
 	EnableInterrupts;
 	
+	cont=0;
 	cont1=0;
 	cont2=0;
 	contaux=0;
 	estado=0;
-	
+
   for(;;) {
-    ver_KBIF();
-
-    
-  } 
-
+	  ver_KBIF();
+  }
 }
 
-void delay(int x){
-	int n;
-	for(n=0 ; n<x ; n++) {
+interrupt Vrti1 void rutina_RTI(void){
+	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
+	cont++;
+	if(cont==107){
+		
+		SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
+			contaux=cont1;
+			if(cont1==0){
+				cont1=1;
+			}else{cont1=0;
+			}
+			if(contaux<cont1){
+				if(cont2==0){
+						cont2=1;
+				}else{cont2=0;
+				}
+			}
+			
+			
+			switch (estado) {
+					case 0:
+						LED_VERDE=ON;
+						LED_AMARILLO=OFF;
+						break;
+						
+					case 1:
+						
+							LED_VERDE=OFF;
+							if(cont1==1){
+								LED_AMARILLO=ON;
+							}
+							if(cont1==0){
+								LED_AMARILLO=OFF;
+							}
+						break;
+						
+					case 2:
+						
+							LED_VERDE=OFF;
+							if(cont2==1){
+								LED_AMARILLO=ON;
+							}
+							if(cont2==0){
+								LED_AMARILLO=OFF;
+							}
+						break;
+				}
+		
+		cont=0;
 	}
-}
-
-void configuracion (void){
-	SOPT=SOPT_COPT_MASK;
-	PTGDD=!(PTGDD_PTGDD1_MASK|PTGDD_PTGDD2_MASK);
-	PTDDD=!(PTDDD_PTDDD2_MASK|PTDDD_PTDDD3_MASK);
-	PTGPE=(PTGPE_PTGPE1_MASK|PTGPE_PTGPE2_MASK);
-	PTDPE=(PTDPE_PTDPE2_MASK|PTDPE_PTDPE3_MASK);
-	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
-	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
-}
-
-void configuracion_KBI (void){
-	KBI1SC=(KBI1SC_KBIMOD_MASK|KBI1SC_KBIE_MASK|KBI1SC_KBACK_MASK);
-	delay(150);
-	KBI1PE=(KBIPE_KBIPE1_MASK|KBIPE_KBIPE2_MASK|KBIPE_KBIPE5_MASK|KBIPE_KBIPE6_MASK);
 }
 
 interrupt Vkbi1 void rutina_KBI(void){
@@ -83,68 +115,76 @@ interrupt Vkbi1 void rutina_KBI(void){
 		estado=2;
 	}
 	
-	
-	
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// configura pines PTBD0 y PTBD1 como salidas y asigna el valor 0 de inicio
+//	SOPT
+// Bit 7 COPE = 0 COP watchdog timer disabled
+// Bit 6 COPT = 1 Long timeout period selected (218 cycles of BUSCLK).
+///////////////////////////////////////////////////////////////////////////////
+void configuracion (void){
+	SOPT=SOPT_COPT_MASK;
+	PTGDD=!(PTGDD_PTGDD1_MASK|PTGDD_PTGDD2_MASK);
+	PTDDD=!(PTDDD_PTDDD2_MASK|PTDDD_PTDDD3_MASK);
+	PTGPE=(PTGPE_PTGPE1_MASK|PTGPE_PTGPE2_MASK);
+	PTDPE=(PTDPE_PTDPE2_MASK|PTDPE_PTDPE3_MASK);
+	PTBDD=(PTBDD_PTBDD0_MASK|PTBDD_PTBDD1_MASK);
+	PTBD=!(PTBD_PTBD0_MASK|PTBD_PTBD1_MASK);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// ICGC1
+// Bit 7 HGO = 0 Configures oscillator for low power
+// Bit 6 RANGE = 1 Configures oscillator for high-frequency range; FLL prescale factor is 1
+// Bit 5 REFS = 1 Requests an oscillator
+// Bits 4:3 CLKS = 11 FLL engaged, external reference clock mode
+// Bit 2 OSCSTEN = 0 Disables the oscillator
+// Bit 1 LOCD = 0 Loss-of-clock detection enabled
+//
+// ***************************************************
+// ICGC2
+// Bit 7 LOLRE = 0 Generates an interrupt request on loss of lock
+// Bit 6:4 MFD = 111 Sets the MFD multiplication factor to 18
+// Bit 3 LOCRE = 0 Generates an interrupt request on loss of clock
+// Bit 2:0 RFD = 100 Sets the RFD division factor to ÷16
+/////////////////////////////////////////////////////////////////////////////////
+
+
+void configuracion_ICG (void){
+	ICGC1=0;
+	ICGC1=(ICGC1_RANGE_MASK|ICGC1_REFS_MASK|ICGC1_CLKS0_MASK|ICGC1_CLKS1_MASK);
+	ICGC2=0;
+	ICGC2=(ICGC2_RFD2_MASK|ICGC2_MFD0_MASK|ICGC2_MFD1_MASK|ICGC2_MFD2_MASK);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+//	bit5=1 usa señal de reloj externo 
+//	bit4=1 interrupciones RTI activadas
+//	bits 2:0 = 110 divide por 16384
+//
+/////////////////////////////////////////////////////////////////////////////////
 void configuracion_RTI (void){
-	SRTISC=0;
-	SRTISC=(SRTISC_RTIS1_MASK|SRTISC_RTIS2_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
+	SRTISC=(SRTISC_RTIS0_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
 }
 
-interrupt Vrti1 void rutina_RTI(void){
-	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
-	contaux=cont1;
-	if(cont1==0){
-		cont1=1;
-	}else{cont1=0;
-	}
-	if(contaux<cont1){
-		if(cont2==0){
-				cont2=1;
-		}else{cont2=0;
-		}
-	}
-	
-	
-	switch (estado) {
-			case 0:
-				LED_VERDE=ON;
-				LED_AMARILLO=OFF;
-				break;
-				
-			case 1:
-				
-					LED_VERDE=OFF;
-					if(cont1==1){
-						LED_AMARILLO=ON;
-					}
-					if(cont1==0){
-						LED_AMARILLO=OFF;
-					}
-				break;
-				
-			case 2:
-				
-					LED_VERDE=OFF;
-					if(cont2==1){
-						LED_AMARILLO=ON;
-					}
-					if(cont2==0){
-						LED_AMARILLO=OFF;
-					}
-				break;
-		}
-	
+void configuracion_KBI (void){
+	KBI1SC=(KBI1SC_KBIMOD_MASK|KBI1SC_KBIE_MASK|KBI1SC_KBACK_MASK);
+	delay(150);
+	KBI1PE=(KBIPE_KBIPE1_MASK|KBIPE_KBIPE2_MASK|KBIPE_KBIPE5_MASK|KBIPE_KBIPE6_MASK);
 }
-
-
 
 void ver_KBIF(void){
 	if ((PERSONA&PUERTA&VENT1&VENT2)==1) {
 		estado=0;
 		KBI1SC_KBIE=1;
 	}
-	
-	
+}
+
+void delay(int x){
+	int n;
+	for(n=0 ; n<x ; n++) {
+	}
 }
