@@ -1,3 +1,4 @@
+
 //*******************************************************************
 //* Universidad Nacional de Colombia                                *
 //* Facultad de ingeniería mecánica y mecatrónica                   *
@@ -35,11 +36,62 @@
 #define VENT1 PTAD_PTAD2
 #define VENT2 PTAD_PTAD3
 
+///////////////////////////////////////////////////////////////////////////////
+// configura pines PTBD0 y PTBD1 como salidas y asigna el valor 0 de inicio
+//
+//	SOPT
+// Bit 7 COPE = 0 COP watchdog timer disabled
+// Bit 6 COPT = 1 Long timeout period selected (218 cycles of BUSCLK).
+//
+// asigna los pines PTA0 a PTA3 como entradas con dispositivo de pull up
+// activado 
+///////////////////////////////////////////////////////////////////////////////
 void configuracion (void);
+
+/////////////////////////////////////////////////////////////////////////////////
+// SRTISC
+// activa las interrupciones por rti, usa una fuente externa como fuente de reloj
+// y se tomo el valor 32768 para modificar la frecuencia externa
+//
+// RTIACK = 1 (write 1 to clear RTIF)
+// RTICLKS = 1 Real-time interrupt request clock source is external clock
+// RTIE = 1 Real-time interrupts enabled
+// RTIS = 1,1,1 text x 32768
+/////////////////////////////////////////////////////////////////////////////////
 void configuracion_RTI (void);
+
+/////////////////////////////////////////////////////////////////////////////////
+// KBISC
+// interrupciones KBI activadas detectando nivel y flanco
+//
+// KBACK = 1 (write 1 to clear KBIIF)
+// KBIMOD = 1 Keyboard detects both edges and levels.
+// KBIE = 1 KBI interrupts enabled
+// 
+// KBIPE
+// indica los pines activados para KBI
+//
+// KBIPE [3:0] = 1 Pin enabled as keyboard interrupt.
+/////////////////////////////////////////////////////////////////////////////////
 void configuracion_KBI (void);
+
+/////////////////////////////////////////////////////////////////////////////////
+// ICGC2
+// configura un oscilador externo con alta ganancia, de rango 1 que indica
+// alta frecuencia de oscilacion, se activaron los bits EREFS y ERCLKEN
+// para usar la frecuencia del oscilador como fuente de reloj para RTI
+//
+// RANGE=1 High frequency range selected for the external oscillator
+// HGO=1 Configure external oscillator for high gain operation
+// EREFS=1  Oscillator requested
+// ERCLKEN= 1 ICSERCLK active
+/////////////////////////////////////////////////////////////////////////////////
 void configuracion_ICG (void);
-void configuracion_puertos(void);
+
+///////////////////////////////////////////////////////////////////////////////
+// verifica si no hay ningun pulsador oprimido para asignar
+// estado 0 - ningun pulsador presionado
+///////////////////////////////////////////////////////////////////////////////
 void ver_KBIF(void);
 void delay(int x);
 
@@ -60,11 +112,17 @@ void main(void) {
 	estado=0;
   for(;;) {
 	  ver_KBIF();
-	  //LED_VERDE=!LED_VERDE;
-	  
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
+// Verifica que pulsador ha sido activado
+// 
+// estado 1 - pulsador persona presionado
+// estado 2 - pulsador puerta o ventana 1 o ventana 2 presionado
+//
+// de acuerdo al estado se realizan diferentes conteos teniendo en cuenta la 
+// frecuencia de referencia para efectuar la conmutacion en el led coreespondiente
+///////////////////////////////////////////////////////////////////////////////
 interrupt Vrti1 void rutina_RTI(void){
 	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
 	cont++;
@@ -118,7 +176,6 @@ interrupt Vrti1 void rutina_RTI(void){
 }
 
 interrupt Vkbi1 void rutina_KBI(void){
-	//KBI1SC=(KBI1SC_KBACK_MASK|!KBI1SC_KBIE_MASK);
 	
 	KBISC_KBIE=0;
 	KBISC_KBACK=1;
@@ -134,12 +191,7 @@ interrupt Vkbi1 void rutina_KBI(void){
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-// configura pines PTBD0 y PTBD1 como salidas y asigna el valor 0 de inicio
-//	SOPT
-// Bit 7 COPE = 0 COP watchdog timer disabled
-// Bit 6 COPT = 1 Long timeout period selected (218 cycles of BUSCLK).
-///////////////////////////////////////////////////////////////////////////////
+
 void configuracion (void){
 	SOPT1=SOPT1_COPT_MASK;
 	PTADD=!(PTADD_PTADD0_MASK|PTADD_PTADD1_MASK|PTADD_PTADD2_MASK|PTADD_PTADD3_MASK);
@@ -148,14 +200,6 @@ void configuracion (void){
 	PTBD=!(PTBD_PTBD2_MASK|PTBD_PTBD3_MASK);
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-// ICGC2
-// BDIV=000 Encoding 0 — Divides selected clock by 1
-// RANGE=1 High frequency range selected for the external oscillator
-// HGO=1 Configure external oscillator for high gain operation
-// EREFS=1  Oscillator requested
-// ERCLKEN= 1 ICSERCLK active
-/////////////////////////////////////////////////////////////////////////////////
 
 
 void configuracion_ICG (void){
@@ -163,15 +207,10 @@ void configuracion_ICG (void){
 	while(ICSSC_OSCINIT == 0);
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-// RTIACK = 1 (write 1 to clear RTIF)
-// RTICLKS = 1 Real-time interrupt request clock source is external clock
-// RTIE = 1 Real-time interrupts enabled
-// RTIS = 1,1,1 text x 32768
-/////////////////////////////////////////////////////////////////////////////////
 void configuracion_RTI (void){
 	SRTISC=(SRTISC_RTIS0_MASK|SRTISC_RTIS1_MASK|SRTISC_RTIS2_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK|SRTISC_RTICLKS_MASK);	
 }
+
 
 void configuracion_KBI (void){
 	KBISC=(KBISC_KBIMOD_MASK|KBISC_KBIE_MASK|KBISC_KBACK_MASK);
