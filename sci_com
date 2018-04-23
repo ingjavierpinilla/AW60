@@ -1,0 +1,69 @@
+#include <hidef.h> /* for EnableInterrupts macro */
+#include "derivative.h" /* include peripheral declarations */
+
+
+
+void configuracion_SCI(void);
+
+void main(void) {
+  EnableInterrupts;
+  /* include your code here */
+
+  
+
+  for(;;) {
+    __RESET_WATCHDOG();	/* feeds the dog */
+  } /* loop forever */
+  /* please make sure that you never leave main */
+}
+
+
+void configuracion_SCI(void){
+	////*****************************************
+	// comunicacion a 9600 baudios
+	////******************************
+	SCI2BDH=0x00;
+	SCI2BDL=0b00011010;
+	////*****************
+	//
+	//7 LOOPS =0 RxD and TxD use separate pins.
+	//6 SCISWAI =0 SCI clocks continue to run in wait mode so the SCI can be the source of an interrupt that wakes up the CPU
+	//5 RSRC =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
+	//4 M =0 Bit or 8-Bit Mode Select, Normal — start + 8 data bits (LSB ﬁrst) + stop.
+	//3 WAKE =0 Idle-line wakeup
+	//2 ILT =0 Idle character bit count starts after start bit.
+	//1 PE =0 No hardware parity generation or checking.
+	//0 PT =0 Even parity.
+	////*****************
+
+	SCI2C1=0x00;
+
+	////*****************
+	//
+	//7 TIE =0 Transmit Interrupt Enable (for TDRE), Hardware interrupts from TDRE disabled (use polling).
+	//6 TCIE =0 Transmission Complete Interrupt Enable (for TC), Hardware interrupts from TC disabled (use polling).
+	//5 RIE =0 Receiver Interrupt Enable (for RDRF), Hardware interrupts from RDRF disabled (use polling).
+	//4 ILIE =0 Idle Line Interrupt Enable (for IDLE), Hardware interrupts from IDLE disabled (use polling)
+	//3 TE =1 Transmitter on.
+	//2 RE =1 Receiver on.
+	//1 RWU =0 Normal SCI receiver operation.
+	//0 SBK =0 Normal transmitter operation.
+	////*****************
+
+	SCI2C2=(SCI2C2_RE_MASK|SCI2C2_TE_MASK);
+
+	////*****************
+	//
+	//7 R8 =0 
+	//6 T8 =0 
+	//5 TXDIR =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
+	//4 TXINV1 =0 Transmit data not inverted
+	//3 ORIE =0 Overrun interrupts disabled (use polling).
+	//2 NEIE =1 Noise Error, hardware interrupt requested when NF = 1.
+	//1 FEIE =0 Framing Error Interrupt disabled (use polling). 
+	//0 PEIE =0 Parity error, PF interrupts disabled (use polling).
+	////*****************
+
+	SCI2C3=(SCI2C3_NEIE_MASK);
+	
+}
