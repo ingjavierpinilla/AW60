@@ -21,6 +21,10 @@ void main(void) {
 void configuracion_SCI(void){
 	////*****************************************
 	// comunicacion a 9600 baudios
+	// SCI baud rate = BUSCLK/(16xBR)
+	// BUSCLK = 4MHz
+	// 9600= 4.000.000/(16*26)
+	// SBR=0000000011010
 	////******************************
 	SCI2BDH=0x00;
 	SCI2BDL=0b00011010;
