@@ -1,22 +1,32 @@
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 
-
+#define LED PTBD_PTBD0
 
 void configuracion_SCI(void);
+void retardo(int cont);
 
 void main(void) {
-  EnableInterrupts;
-  /* include your code here */
-
+  SOPT=0x40;
+  PTBDD=0b00000001;
+  configuracion_SCI();
   
-
-  for(;;) {
-    __RESET_WATCHDOG();	/* feeds the dog */
-  } /* loop forever */
-  /* please make sure that you never leave main */
+	for(;;){
+	  SCI2D=0b11111111;
+	  while(SCI2S1_TC==0){}
+	  
+	  if(LED==0){
+		  LED=1;
+	  }else{
+		  LED=0;
+	  }
+	}
 }
 
+void retardo(int cont){
+	int n;
+	for(n=0; n<cont; cont++);
+}
 
 void configuracion_SCI(void){
 	////*****************************************
@@ -33,7 +43,7 @@ void configuracion_SCI(void){
 	//7 LOOPS =0 RxD and TxD use separate pins.
 	//6 SCISWAI =0 SCI clocks continue to run in wait mode so the SCI can be the source of an interrupt that wakes up the CPU
 	//5 RSRC =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
-	//4 M =0 Bit or 8-Bit Mode Select, Normal — start + 8 data bits (LSB ﬁrst) + stop.
+	//4 M =0 Bit or 8-Bit Mode Select, Normal — start + 8 data bits (LSB First) + stop.
 	//3 WAKE =0 Idle-line wakeup
 	//2 ILT =0 Idle character bit count starts after start bit.
 	//1 PE =0 No hardware parity generation or checking.
@@ -71,3 +81,4 @@ void configuracion_SCI(void){
 	SCI2C3=(SCI2C3_NEIE_MASK);
 	
 }
+
