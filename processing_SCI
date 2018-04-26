@@ -1,1 +1,238 @@
+//*******************************************************************
+//* Universidad Nacional de Colombia                                *
+//* Facultad de ingeniería mecánica y mecatrónica                   *
+//* Microcontroladores 2018-I                                       *
+//* Programador:                                                    *
+//* -Sebastian Cepeda Espinosa                                      *
+//* Version: 1.0                                                    *
+//* Práctica: Laoratorio No.7                                       *
+//* Software: Processing                                            *
+//* Este código crea una intreface gráfica para la lectura de los   *
+//* datos enviados por el microcontrolador MC9S08AW60, mediante el  *
+//* protocolo de comunicación serial UART. Esta interface grafica   *
+//* los valores obtenidos bajo el esquema de toma de mediciones de  *
+//* una variable (V), ajo intervalos de otra (X)                    *
+//*******************************************************************
 
+import processing.serial.*;
+
+Serial myPort;  // Declaración de objeto tipo Serial para comunicación 
+double val;      // Dato recibido por Serial
+double acomulado; // acomulado para sacar media de val
+int cantmuestras; // número de muestras tomadas
+
+color blanco = color(255, 255, 255);
+color negro = color(0, 0, 0);
+color azul = color(0, 0, 255);
+color rojo = color(255, 0, 0);
+color verde = color(0, 255, 0);
+color gris = color(192, 192, 192);
+//Datos auxiliares para graficar eje X
+double X = 10; //cm
+double x = 0; //cm
+int muestras = 20;
+
+int dx= 520/(muestras+1);
+double dl=(X-x)/muestras;
+double V=255, v=0;
+//Datos auxiliares para graficar eje X
+int pasos=10;               //cantidad de subdivisiones del eje Y
+int dy= (int)350/(pasos+1);
+double dv=(V-v)/pasos;
+
+//Datos auxiliares para la creación del botón
+int b1X=700, b1Y=250;//posición botones
+int b2X=700, b2Y=350;
+int tamX=150, tamY=60; //Tamaño botones
+int muestra;
+int estado;
+int estadob;
+
+double Vbefore=0; //Dato auxiliar para realizar la gráfica linea a linea
+
+void setup() 
+{
+  size(1000, 600);  //Creación de la ventana principal
+  background(255);
+
+  estado=0;          //inicialización de variales
+  estadob=0;
+  muestra=1;
+  acomulado=0;
+  cantmuestras=0;
+  
+  //Creaci+on de gráficos iniciales: Encabezados, eje coordenado y botones
+  
+  encabezado();
+  drawaxis();
+  drawbuttons();
+
+  // Reconocimiento y asignación del puesto COM a Utilizar
+  String portName = Serial.list()[3];
+  println(portName);
+  myPort = new Serial(this, portName, 9600); // Se construye el objeto de clase Serial para comunicación a 9600 baudios
+  
+}
+
+void draw() //Ciclo infinito
+{
+  if (estado==1) {            //El estado 1 corresponde a la toma de datos del Serial 
+    if(cantmuestras<10000){    // Se limita la acoumlación para evitar que la varianble se desborde
+      read();                  //Lectura Serial
+    }
+  }
+}
+
+//Método para implementar la lectura de Serial
+void read() {
+  if ( myPort.available() > 0) {  // If data is available,
+    val = myPort.read();         // read it and store it in val
+    println(val);
+  }
+  acomulado+=val;                //Actualización de variables para obtener la media de las lecturas 
+  cantmuestras++;
+}
+
+void dibujar() {                 //Crea las lineas que formarán la grafica
+  
+  double valor=acomulado/cantmuestras;    //Filtro media
+  stroke(azul);
+  strokeWeight(3);
+  line(dx*(muestra-1)+90, 520-(int)Vbefore,dx*(muestra)+90,520-(int)valor);    
+  //Los valores en X están dados por el delta de distancia al que corresponde la muestra, los valores en Y:
+  //1. Vbefore: Valor obtenido para la muestra anterior
+  //2. valor: obtenido para la muestra actual
+  Vbefore=valor;
+  cantmuestras=0;    //Reinicio de variables empleadas en la obtención de la media de los datos.
+  acomulado=0;
+}
+
+void mouseClicked() {                        //Cambio de estados y creación de líneas en la gráfica como respuesta al click en el botón
+  if ( overRect(b2X, b2Y, tamX, tamY) ) {
+    if (estado==1) {
+      estado=0;  
+      dibujar();
+      muestra++;
+    } else if (estado==0) {
+      estado=1;
+    }
+    reDraw();
+  }
+}
+
+boolean overRect(int x, int y, int width, int height) {   //Evaluar si el evento de click se produce dentro del rectángulo correspondiente al botón
+  if (mouseX >= x && mouseX <= x+width && 
+    mouseY >= y && mouseY <= y+height) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void drawbuttons() {      // Crear los gráficos del botón y el label que indica el número de la muestra actual
+
+  stroke(rojo);
+  fill(rojo);
+  rect(b2X, b2Y, tamX, tamY);
+
+  textSize(20);
+  fill(blanco);
+  text("Próxima \n muestra ", b1X+30, b1Y+20);
+
+  textSize(20);
+  fill(blanco);
+  text("Recibir \n datos ", b2X+40, b2Y+20);
+  
+  textSize(30);
+  fill(negro);
+  text("Muestra No:"+muestra+"\nDistancia: "+muestra*dl+"cm", 700, 260);
+}
+
+void reDraw() {      // Función que redibuja el botón y el label cada vez que el usuario hacer click en el botón
+  if (estadob==1) {
+    stroke(rojo);
+    fill(rojo);
+    rect(b2X, b2Y, tamX, tamY);
+    textSize(20);
+    fill(blanco);
+    text("Recibir \n datos", b2X+40, b2Y+20);
+    
+    stroke(blanco);
+    fill(blanco);
+    rect(690, 220, 300, tamY*2);
+    
+    textSize(30);
+    fill(negro);
+    text("Muestra No:"+muestra+"\nDistancia: "+muestra*dl+"cm", 700, 260);
+   
+    estadob=0;
+  } else {
+    stroke(verde);
+    fill(verde);
+    rect(b2X, b2Y, tamX, tamY);
+    textSize(20);
+    fill(blanco);
+    text("Parar", b2X+50, b2Y+40);
+    estadob=1;
+  }
+}
+
+void encabezado() {    // Crea los encabezados de la ventana
+  textSize(50);
+  fill(negro);
+  text("Universidad Nacional de Colombia", 60, 60);
+  textSize(25);
+  text("Microcontroladores - Laboratorio 7: Caracterización IR", 150, 100);
+}
+
+void drawaxis() {  // Crea los ejes coordenados
+  stroke(rojo);
+  strokeWeight(3);
+  line(90, 200, 90, 550);
+  line(90, 200, 80, 210);
+  line(90, 200, 100, 210);
+  line(60, 520, 600, 520);
+  line(600, 520, 590, 510);
+  line(600, 520, 590, 530); 
+  drawY();
+  drawX();
+}
+
+void drawY() {  // Llema el eje Y con los valores y los indicadores
+
+  for (int n=1; n<pasos; n++) {
+    stroke(rojo);
+    strokeWeight(2);
+    line(80, 520-dy*n, 90, 520-dy*n);
+    stroke(gris);
+    strokeWeight(1);
+    line(100, 520-dy*n, 580, 520-dy*n);
+  }
+  for (int n=1; n<=pasos; n++) {
+
+    textSize(12);
+    fill(negro);
+    text(Double.toString(v+(dv*(n-1))), 30, 550-dy*n);
+  }
+
+  textSize(20);
+  fill(negro);
+  text("Lectura IR [mV]", 40, 165);
+}
+
+void drawX() {  // Llena el eje X con los valores y los indicadores
+
+  for (int n=1; n<=muestras; n++) {
+
+    stroke(rojo);
+    strokeWeight(2);
+    line( 90+dx*n, 530, 90+dx*n, 520);
+
+    textSize(10);
+    fill(negro);
+    text(Double.toString(n*dl), 90+dx*n, 550);
+  }
+  textSize(20);
+  fill(negro);
+  text("Distancia [cm]", 620, 530);
+}
