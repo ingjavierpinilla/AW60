@@ -1,16 +1,31 @@
+//*******************************************************************
+//* Universidad Nacional de Colombia                                *
+//* Facultad de ingeniería mecánica y mecatrónica                   *
+//* Microcontroladores 2018-I                                       *
+//* Programador:                                                    *
+//* -Sebastian Cepeda Espinosa                                      *
+//* -Javier Mauricio Pinilla Garcia				    				*
+//* -Carlos David Caballero					    					*
+//* Version: 1.0                                                    *
+//* Microcontrolador: MC9S08QG8CPBE                                 *
+//* Codigo para usar un oscilador externo al uC con el fin de       *
+//* configurar la frecuencia de encendido y apago de 2 LEDs,	    *
+//* de acuerdo al estado de 4 pulsadores		            *
+//*******************************************************************
+
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 
-#define emisor PTBD_PTBD0
+#define emisor PTBD_PTBD0 
 
-int delay;
-int estado;
-char ruido;
-char senal;
-char valor;
+int delay;		// inicialización de variable para ciclos de función retardo
+int estado;		// Variable que identifica el estado en que se encuentra
+char ruido;		// Lectura realizada con el emisor IR apagado
+char senal;		// Lectura realizada con el emisor IR encendido
+char valor;		// Diferencia entre senal y ruido
 
-void leds();
-void configuracion_init();
+//Declaración de los mpetodos que se emplean
+void configuracion_init();	
 void configuracion_ADC();
 void configuracion_SCI();
 void retardo(int cont);
@@ -21,53 +36,61 @@ void main(void) {
 	configuracion_SCI();
 	
 	for(;;){
-		if(estado==0){
+		if(estado==0){		//Configuración del emisor de acuerdo al estado de lectura
 			emisor = 1;
 		}else{
 			emisor = 0;
 		}
-		if(estado == 0){
+		if(estado == 0){	//En el estado 0 se lee el receptor IR son el emisor encendido 
 			senal = ADC1RL;
-			retardo(10);
+			retardo(10);	// retardo para garantizar la lectura del ADC
 			estado=1;
 		}else{
-			if(estado == 1){
-				ruido = AD1RL;
-				retardo(10);
-				valor = senal - ruido;
-				estado = 0;
-			}
+					//En el estado 1 se lee el receptor IR son el emisor encendido 
+			ruido = AD1RL;
+			retardo(10);	// retardo para garantizar la lectura del ADC
+			valor = senal - ruido;	//calcular la señal sin afectación de la luz ambiente
+			estado = 0;
 		}
 			
-		SCI2D=valor;
-		while(SCI2S1_TC==0){}
-		for(delay = 0;delay <=20000;delay++){} // Espera para estabilizar config
+		SCI2D=valor;		//El registro SCI2D contiene el valor que es enviado por comunicación Serial 
+		while(SCI2S1_TC==0){} //Espera mientras se envía el registro
+		for(delay = 0;delay <=20000;delay++){} // Espera para estabilizar config  //Delay para limitar la frecuencia (limitación de impuesta por el programa de lectura en Processing)
 	}
 }
 
 void configuracion_init(){
-	SOPT=0x40;
-		estado = 0;
+		SOPT=0x40;
+		// WatchDog desactivado 
+		// COPT1 = tiempo de muestreo de WatchDog largo
+		estado = 0;	
 		ruido = 0x00;
 		senal = 0x00;
-		PTBDD=(PTBDD_PTBDD0_MASK | PTBDD_PTBDD1_MASK  | PTBDD_PTBDD2_MASK  | PTBDD_PTBDD3_MASK);
-		PTDDD=(PTDDD_PTDDD0_MASK | PTDDD_PTDDD1_MASK);
-		PTCDD=(PTCDD_PTCDD2_MASK);
+		PTBDD=(PTBDD_PTBDD0_MASK); //Pin PTB0 Salida
 }
 
 void configuracion_ADC(){
-	ADC1SC1_ADCO = 1; // CONTINUA
-	//ADC1SC1_AIEN = 0;
-	//ADC1SC1_COCO = 0;
-	//ADC1SC1_ADCH = 0;
+	////*****************************************
+	// Conversion complete interrupt disabled
+	// Continuous Conversion Enable
+	////******************************
+	ADC1SC1_ADCO = 1; 
 	
-/*
-	ADC1CFG_MODE = ADC1CFG_MODE_BITNUM; // 8 bits ==0
-	ADC1CFG_ADICLK = ADC1CFG_ADICLK_BITNUM; // Reloj de bus=0
-*/
+	////*****************************************
+	// High speed configuration
+	// internal clock ADCK = Input clock
+	// Short Sample Time Configuration
+	// 8-bit conversion mode (N=8)
+	// Input clock =Bus CLock
+	////******************************
 	ADC1CFG = 0x00;
-	ADC1SC1 = (ADC1SC1_ADCO_MASK| ADC1SC1_ADCH1_MASK | ADC1SC1_ADCH3_MASK); //AD1P10 = PTD2
-	retardo(1000); // Espera para estabilizar config
+	
+	////*****************************************
+	// Input Channel Select = PTD2 =  AD1P10
+	////******************************
+	ADC1SC1 = (ADC1SC1_ADCO_MASK| ADC1SC1_ADCH1_MASK | ADC1SC1_ADCH3_MASK); 
+	
+	retardo(1000); // Espera que se estabilice el ADC
 }
 
 void retardo(int cont){
