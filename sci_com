@@ -1,26 +1,73 @@
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 
-#define LED PTBD_PTBD0
+#define emisor PTBD_PTBD0
 
-void configuracion_SCI(void);
+int delay;
+int estado;
+char ruido;
+char senal;
+char valor;
+
+void leds();
+void configuracion_init();
+void configuracion_ADC();
+void configuracion_SCI();
 void retardo(int cont);
 
 void main(void) {
-  SOPT=0x40;
-  PTBDD=0b00000001;
-  configuracion_SCI();
-  
+	configuracion_init();	
+	configuracion_ADC();
+	configuracion_SCI();
+	
 	for(;;){
-	  SCI2D=0b11111111;
-	  while(SCI2S1_TC==0){}
-	  
-	  if(LED==0){
-		  LED=1;
-	  }else{
-		  LED=0;
-	  }
+		if(estado==0){
+			emisor = 1;
+		}else{
+			emisor = 0;
+		}
+		if(estado == 0){
+			senal = ADC1RL;
+			retardo(10);
+			estado=1;
+		}else{
+			if(estado == 1){
+				ruido = AD1RL;
+				retardo(10);
+				valor = senal - ruido;
+				estado = 0;
+			}
+		}
+			
+		SCI2D=valor;
+		while(SCI2S1_TC==0){}
+		for(delay = 0;delay <=20000;delay++){} // Espera para estabilizar config
 	}
+}
+
+void configuracion_init(){
+	SOPT=0x40;
+		estado = 0;
+		ruido = 0x00;
+		senal = 0x00;
+		PTBDD=(PTBDD_PTBDD0_MASK | PTBDD_PTBDD1_MASK  | PTBDD_PTBDD2_MASK  | PTBDD_PTBDD3_MASK);
+		PTDDD=(PTDDD_PTDDD0_MASK | PTDDD_PTDDD1_MASK);
+		PTCDD=(PTCDD_PTCDD2_MASK);
+}
+
+void configuracion_ADC(){
+	ADC1SC1_ADCO = 1; // CONTINUA
+	//ADC1SC1_AIEN = 0;
+	//ADC1SC1_COCO = 0;
+	//ADC1SC1_ADCH = 0;
+	
+/*
+	ADC1CFG_MODE = ADC1CFG_MODE_BITNUM; // 8 bits ==0
+	ADC1CFG_ADICLK = ADC1CFG_ADICLK_BITNUM; // Reloj de bus=0
+*/
+	ADC1CFG = 0x00;
+	ADC1SC1 = (ADC1SC1_ADCO_MASK| ADC1SC1_ADCH1_MASK | ADC1SC1_ADCH3_MASK); //AD1P10 = PTD2
+	retardo(1000); // Espera para estabilizar config
 }
 
 void retardo(int cont){
@@ -81,4 +128,3 @@ void configuracion_SCI(void){
 	SCI2C3=(SCI2C3_NEIE_MASK);
 	
 }
-
