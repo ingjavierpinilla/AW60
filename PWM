@@ -33,7 +33,7 @@ void conf_TPM(int ciclo_util){
 	//
 	// CPWMS = PWM centrado
 	// CLKSA = Fuente de reloj BUSCLK
-	// PS1 = Divisor de 4
+	// PS1 = Divisor de 4, reloj a 1kHz
 	
 	TPM2SC=(TPM2SC_CPWMS_MASK |TPM2SC_CLKSA_MASK|TPM2SC_PS1_MASK);
 	
