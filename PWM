@@ -1,33 +1,61 @@
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 #define periodo 20 // periodo del PWM en ms
-
-
-
+#define Vkbi1 18
+#define LED PTBD_PTBD0
 
 void conf_TPM(int ciclo_util);
 void cambia_ciclo_util(int a);
+void configuracion_KBI(void);
+void delay(int x);
+
 int util=10;	//ciclo util en porcentaje
+int estado;
 
 void main(void) {
 	SOPT=0x40;
+	PTDDD_PTDDD3=0;
+	PTBDD_PTBDD0=1;
+	PTDPE=(PTDPE_PTDPE2_MASK);
+	configuracion_KBI();
 			// WatchDog desactivado 
-			// COPT1 = tiempo de muestreo de WatchDog largo
+			// COPT = tiempo de muestreo de WatchDog largo
 	conf_TPM(util);
-	
-	
-	
   EnableInterrupts;
+  estado=0;
   
-
-  
-
   for(;;) {
     // cambiar valor de util
 	  cambia_ciclo_util(util);
-  } /* loop forever */
-  /* please make sure that you never leave main */
+	  if(estado==1){
+		  LED=1;
+	  }
+	  else{
+		  LED=0;
+	  }
+  }
 }
+
+interrupt Vkbi1 void rutina_KBI(void){	
+	//KBISC_KBIE=0;
+	KBISC_KBACK=1;
+	
+	if(estado==0){
+		estado=1;
+	}
+	else{
+		estado=0; 
+	}
+}
+
+
+void configuracion_KBI (void){
+	KBISC=(KBISC_KBIE_MASK|KBISC_KBEDG5_MASK);
+	delay(150);
+	KBIPE=(KBIPE_KBIPE5_MASK);
+	KBISC=(KBISC|KBISC_KBACK_MASK);
+}
+
 
 void conf_TPM(int ciclo_util){
 	//
@@ -44,11 +72,18 @@ void conf_TPM(int ciclo_util){
 	TPM2MOD=periodo*1000/2;	
 	
 	//ciclo util
-	TPM2C0V=ciclo_util*1000;
+	TPM2C0V=ciclo_util*1000/2;
 }
 
 void cambia_ciclo_util(int a){
 	//ciclo util
-		TPM2C0V=a*1000;
+		TPM2C0V=a*1000/2;
 	
+}
+
+void delay(int x){
+	int n;
+	for(n=0 ; n<x ; n++) {
+		_asm NOP;
+	}
 }
