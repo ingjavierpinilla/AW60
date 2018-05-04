@@ -1,7 +1,7 @@
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 #define periodo 20 // periodo del PWM en ms
-#define Vkbi1 18
+#define Vkbi1 22
 #define LED PTBD_PTBD0
 
 void conf_TPM(int ciclo_util);
@@ -50,10 +50,10 @@ interrupt Vkbi1 void rutina_KBI(void){
 
 
 void configuracion_KBI (void){
-	KBISC=(KBISC_KBIE_MASK|KBISC_KBEDG5_MASK);
+	KBISC=(KBISC_KBIMOD_MASK|KBISC_KBIE_MASK|KBISC_KBACK_MASK);
 	delay(150);
-	KBIPE=(KBIPE_KBIPE5_MASK);
-	KBISC=(KBISC|KBISC_KBACK_MASK);
+	PTGPE=(PTGPE_PTGPE0_MASK|PTGPE_PTGPE1_MASK|PTGPE_PTGPE2_MASK|PTGPE_PTGPE3_MASK);
+	KBIPE=(KBIPE_KBIPE0_MASK|KBIPE_KBIPE1_MASK|KBIPE_KBIPE2_MASK|KBIPE_KBIPE3_MASK);
 }
 
 
