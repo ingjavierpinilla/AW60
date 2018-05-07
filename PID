@@ -1,0 +1,109 @@
+#include <hidef.h> /* for EnableInterrupts macro */
+#include "derivative.h" /* include peripheral declarations */
+
+float deltaT = 20000;
+int pastSize = 2;
+
+// Control variables (set by host).
+float direct; // Direct motor command from host.
+float desired;  // Desired value (speed or angle) from host.
+float Kp; // Feedback gains (proportional)
+float Kd; // Feedback gains (delta)
+float Ki; // Feedback gains (sum)
+float maxSum;
+
+float pastmotorPos[2];
+
+//data
+float pastError[2];
+float sum;
+
+void main(void) {
+	EnableInterrupts
+	;
+	/* include your code here */
+
+	for (;;) {
+
+		//long newPosition = myEnc.read();
+		float newPosition;
+		float motorPos = 0.0017570 * newPosition;
+		int i, k;
+		long motorVel;
+		float error;
+		float delta;
+		int motorCmd;
+
+		for (i = (pastSize - 1); i > 0; i--) {
+			pastmotorPos[i] = pastmotorPos[i - 1];
+		}
+
+		for (i = pastSize - 1; i > 0; i--) {
+			pastError[i] = pastError[i - 1];
+		}
+
+		pastmotorPos[0] = motorPos;
+
+		motorVel = (pastmotorPos[0] - pastmotorPos[pastSize - 1])
+				/ ((pastSize - 1) * ((deltaT) * 0.000001));
+
+		// Compute the error, which is the difference between desired and measured position.
+		error = desired - motorVel;
+
+		pastError[0] = error;
+		delta = (pastError[0] - pastError[pastSize - 1])
+				/ ((pastSize - 1) * ((deltaT) * 0.000001));
+
+		if (sum + error * (deltaT) * 0.000001 > -1 * maxSum) {
+			k = sum + error * (deltaT) * 0.000001;
+			if (k < maxSum) {
+				sum = k;
+			} else {
+				sum = maxSum;
+			}
+		} else if (maxSum < -1 * maxSum) {
+			sum = maxSum;
+		}
+		{
+			sum = -1 * maxSum;
+
+		}
+		//sum = min(max(sum + error * (deltaT) * 0.000001, -1 * maxSum), maxSum);
+
+		
+		
+		
+		// Compute and limit the motor output command.
+		motorCmd = ((Kp * error + Kd * delta + Ki * sum + direct) / 0.0122);
+
+		if (motorCmd >= 0) {
+			
+			
+			if (motorCmd>0) {
+				if (motorCmd<8191) {
+					motorCmd=motorCmd;
+				}else {
+					motorCmd=8191;
+				}
+			}else {
+				motorCmd=0;
+			}
+			//motorCmd = min(max(motorCmd, 0), 8191);
+			/* definir salida del motor reversa
+			 //analogWrite(motorOutputPinFrw,0);
+			 //analogWrite(motorOutputPinRev,motorCmd);
+			 
+			 }else{
+			 motorCmd = -motorCmd;
+			 motorCmd = min(max(motorCmd, 0), 8191);
+			 /****************************************
+			 * definir salida del motor hacia adelante
+			 */
+			//analogWrite(motorOutputPinFrw,motorCmd);
+			//analogWrite(motorOutputPinRev,0);
+			motorCmd = -motorCmd;
+		}
+
+	} /* loop forever */
+	/* please make sure that you never leave main */
+}
