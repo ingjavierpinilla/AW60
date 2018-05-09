@@ -1,109 +1,207 @@
 #include <hidef.h> /* for EnableInterrupts macro */
 #include "derivative.h" /* include peripheral declarations */
 
-float deltaT = 20000;
-int pastSize = 2;
+#define periodo 20 // periodo del PWM en ms
+#define Vkbi1 22
+#define VTPM1CH0 5
+#define VRTI 25
+#define LED1 PTBD_PTBD0
+#define LED2 PTBD_PTBD3
+#define LECTURA1 PTGD_PTGD0
+#define LECTURA2 PTGD_PTGD1
+#define AVANCE PTBD_PTBD1
+#define RETROCESO PTBD_PTBD2
+#define dl TPM2C1V
+#define TRTI (128/1000) //Tiempo dt de acuerdo a RTI
+#define summax 128000.0
 
-// Control variables (set by host).
-float direct; // Direct motor command from host.
-float desired;  // Desired value (speed or angle) from host.
-float Kp; // Feedback gains (proportional)
-float Kd; // Feedback gains (delta)
-float Ki; // Feedback gains (sum)
-float maxSum;
 
-float pastmotorPos[2];
+#define Kp 10
+#define Ki 10
+#define Kd 10
 
-//data
-float pastError[2];
-float sum;
+
+
+int util=10;	//ciclo util en porcentaje
+char velL;
+char velH;
+unsigned int dt;
+double velocidad;
+double referencia;
+double error[2];
+double sum;
+double nominal;
+double delta;
+
+
+
+void conf_TPM(int ciclo_util);
+void cambia_ciclo_util(int a);
+//void configuracion_KBI(void);
+//void reiniciarKBI(void);
+void conf_SCI(void);
+void delay(int x);
+void configuracion_RTI (void);
 
 void main(void) {
-	EnableInterrupts
-	;
-	/* include your code here */
+	SOPT=0x40;
+	// WatchDog desactivado 
+	// COPT = tiempo de muestreo de WatchDog largo
+	PTBDD_PTBDD0=1;
+	PTBDD_PTBDD1=1;
+	PTBDD_PTBDD2=1;
+	PTBDD_PTBDD3=1;
+	PTGDD_PTGDD0=0;
+	
+	LED1=0;
+	LED2=0;
+	dt=0;
+	velL=0;
+	velH=0;
+	velocidad=0.0;
+	referencia=0.0;
+	error[0]=0.0;
+	error[1]=0.0;
+	delta=0.0;
+	sum=0.0;
+	nominal=0.0;
+	
+	AVANCE=1;
+	RETROCESO=0;
+	
+	conf_TPM(util);
+	conf_SCI();
+	
+	EnableInterrupts;
+  
+  for(;;) {
+    // cambiar valor de util
+	  //cambia_ciclo_util(util);
+	  //reiniciarKBI();
+  }
+}
 
-	for (;;) {
+/////////////////////////////////////////////////////////////////////////////////
+//
+//	bit5=1 usa señal de reloj externo 
+//	bit4=1 interrupciones RTI activadas
+//	bits 2:0 = 110 perido de 128 ms
+/////////////////////////////////////////////////////////////////////////////////
+void configuracion_RTI (void){
+	SRTISC=(SRTISC_RTIS2_MASK|SRTISC_RTIE_MASK|SRTISC_RTIACK_MASK);	
+}
 
-		//long newPosition = myEnc.read();
-		float newPosition;
-		float motorPos = 0.0017570 * newPosition;
-		int i, k;
-		long motorVel;
-		float error;
-		float delta;
-		int motorCmd;
+void conf_SCI(void){
+	////*****************************************
+	// comunicacion a 9600 baudios
+	// SCI baud rate = BUSCLK/(16xBR)
+	// BUSCLK = 4MHz
+	// 9600= 4.000.000/(16*26)
+	// SBR=0000000011010
+	////******************************
+	SCI2BDH=0x00;
+	SCI2BDL=0b00011010;
+	////*****************
+	//
+	//7 LOOPS =0 RxD and TxD use separate pins.
+	//6 SCISWAI =0 SCI clocks continue to run in wait mode so the SCI can be the source of an interrupt that wakes up the CPU
+	//5 RSRC =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
+	//4 M =0 Bit or 8-Bit Mode Select, Normal — start + 8 data bits (LSB First) + stop.
+	//3 WAKE =0 Idle-line wakeup
+	//2 ILT =0 Idle character bit count starts after start bit.
+	//1 PE =0 No hardware parity generation or checking.
+	//0 PT =0 Even parity.
+	////*****************
 
-		for (i = (pastSize - 1); i > 0; i--) {
-			pastmotorPos[i] = pastmotorPos[i - 1];
-		}
+	SCI2C1=0x00;
 
-		for (i = pastSize - 1; i > 0; i--) {
-			pastError[i] = pastError[i - 1];
-		}
+	////*****************
+	//
+	//7 TIE =0 Transmit Interrupt Enable (for TDRE), Hardware interrupts from TDRE disabled (use polling).
+	//6 TCIE =0 Transmission Complete Interrupt Enable (for TC), Hardware interrupts from TC disabled (use polling).
+	//5 RIE =0 Receiver Interrupt Enable (for RDRF), Hardware interrupts from RDRF disabled (use polling).
+	//4 ILIE =0 Idle Line Interrupt Enable (for IDLE), Hardware interrupts from IDLE disabled (use polling)
+	//3 TE =1 Transmitter on.
+	//2 RE =1 Receiver on.
+	//1 RWU =0 Normal SCI receiver operation.
+	//0 SBK =0 Normal transmitter operation.
+	////*****************
 
-		pastmotorPos[0] = motorPos;
+	SCI2C2=(SCI2C2_RE_MASK|SCI2C2_TE_MASK);
 
-		motorVel = (pastmotorPos[0] - pastmotorPos[pastSize - 1])
-				/ ((pastSize - 1) * ((deltaT) * 0.000001));
+	////*****************
+	//
+	//7 R8 =0 
+	//6 T8 =0 
+	//5 TXDIR =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
+	//4 TXINV1 =0 Transmit data not inverted
+	//3 ORIE =0 Overrun interrupts disabled (use polling).
+	//2 NEIE =1 Noise Error, hardware interrupt requested when NF = 1.
+	//1 FEIE =0 Framing Error Interrupt disabled (use polling). 
+	//0 PEIE =0 Parity error, PF interrupts disabled (use polling).
+	////*****************
+	SCI2C3=(SCI2C3_NEIE_MASK);
+	
+}
 
-		// Compute the error, which is the difference between desired and measured position.
-		error = desired - motorVel;
+interrupt VRTI void rutina_RTI(void){
+	SRTISC=(SRTISC|SRTISC_RTIACK_MASK);
+	error[1]=error[0];
+	error[0]=referencia-velocidad;
+	delta=error[0]-error[1];
+	if(((sum+error[0]*TRTI) < summax) && ((sum+error[0]*TRTI) > -summax)){
+		sum+=error[0]*TRTI;
+	}
+	nominal = Kp*error[0] + sum*Ki + Kd*delta;
+	util=(int)((periodo/100)*(nominal));
+	cambia_ciclo_util(util);
+}
 
-		pastError[0] = error;
-		delta = (pastError[0] - pastError[pastSize - 1])
-				/ ((pastSize - 1) * ((deltaT) * 0.000001));
+interrupt VTPM1CH0 void rutina_tpm(void){	
+	dt=TPM2C1V;
+	velocidad=((2/5)*3.1416)/dt;
+	
+	if(LECTURA1 != LECTURA2){
+		velocidad=-velocidad;
+	}
+	
+	  SCI2D=velH;		//El registro SCI2D contiene el valor que es enviado por comunicación Serial 
+	  while(SCI2S1_TC==0){} //Espera mientras se envía el registro
+	  SCI2D=velL;		//El registro SCI2D contiene el valor que es enviado por comunicación Serial 
+	  while(SCI2S1_TC==0){} //Espera mientras se envía el registro
+}
 
-		if (sum + error * (deltaT) * 0.000001 > -1 * maxSum) {
-			k = sum + error * (deltaT) * 0.000001;
-			if (k < maxSum) {
-				sum = k;
-			} else {
-				sum = maxSum;
-			}
-		} else if (maxSum < -1 * maxSum) {
-			sum = maxSum;
-		}
-		{
-			sum = -1 * maxSum;
+void conf_TPM(int ciclo_util){
+	//
+	// CPWMS = PWM centrado
+	// CLKSA = Fuente de reloj BUSCLK
+	// PS1 = Divisor de 4, reloj a 1kHz
+	
+	TPM2SC=(TPM2SC_CPWMS_MASK |TPM2SC_CLKSA_MASK|TPM2SC_PS1_MASK);
+	
+	// PWM centrado, High-true pulses (clear output on compare)
+	TPM2C0SC=(TPM2C0SC_ELS0B_MASK);
+	
+	TPM1SC=(TPM1SC_CLKSA_MASK|TPM1SC_PS1_MASK);
+	
+	TPM1C0SC=(TPM1C0SC_ELS0B_MASK|TPM1C0SC_CH0IE_MASK);
+	
+	// Medio periodo
+	TPM2MOD=periodo*1000/2;	
+	
+	//ciclo util
+	TPM2C0V=ciclo_util*1000/2;
+}
 
-		}
-		//sum = min(max(sum + error * (deltaT) * 0.000001, -1 * maxSum), maxSum);
+void cambia_ciclo_util(int a){
+	//ciclo util
+		TPM2C0V=a*1000/2;
+	
+}
 
-		
-		
-		
-		// Compute and limit the motor output command.
-		motorCmd = ((Kp * error + Kd * delta + Ki * sum + direct) / 0.0122);
-
-		if (motorCmd >= 0) {
-			
-			
-			if (motorCmd>0) {
-				if (motorCmd<8191) {
-					motorCmd=motorCmd;
-				}else {
-					motorCmd=8191;
-				}
-			}else {
-				motorCmd=0;
-			}
-			//motorCmd = min(max(motorCmd, 0), 8191);
-			/* definir salida del motor reversa
-			 //analogWrite(motorOutputPinFrw,0);
-			 //analogWrite(motorOutputPinRev,motorCmd);
-			 
-			 }else{
-			 motorCmd = -motorCmd;
-			 motorCmd = min(max(motorCmd, 0), 8191);
-			 /****************************************
-			 * definir salida del motor hacia adelante
-			 */
-			//analogWrite(motorOutputPinFrw,motorCmd);
-			//analogWrite(motorOutputPinRev,0);
-			motorCmd = -motorCmd;
-		}
-
-	} /* loop forever */
-	/* please make sure that you never leave main */
+void delay(int x){
+	int n;
+	for(n=0 ; n<x ; n++) {
+		_asm NOP;
+	}
 }
