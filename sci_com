@@ -8,9 +8,7 @@
 //* -Carlos David Caballero					    					*
 //* Version: 1.0                                                    *
 //* Microcontrolador: MC9S08QG8CPBE                                 *
-//* Codigo para usar un oscilador externo al uC con el fin de       *
-//* configurar la frecuencia de encendido y apago de 2 LEDs,	    *
-//* de acuerdo al estado de 4 pulsadores		            *
+//* Codigo para realizar la caracterizacion de sensores IR          *
 //*******************************************************************
 
 #include <hidef.h> /* for EnableInterrupts macro */
