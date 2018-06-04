@@ -1,0 +1,102 @@
+#include <hidef.h> /* for EnableInterrupts macro */
+#include "derivative.h" /* include peripheral declarations */
+
+#define SC_IR0_FD (ADC1SC1_ADCO_MASK)
+#define SC_IR1_TI (ADC1SC1_ADCO_MASK | ADC1SC1_ADCH0_MASK)
+#define SC_IR2_FI (ADC1SC1_ADCO_MASK | ADC1SC1_ADCH1_MASK)
+#define SC_IR3_TD (ADC1SC1_ADCO_MASK | ADC1SC1_ADCH0_MASK | ADC1SC1_ADCH1_MASK)
+#define SC_IR4_F (ADC1SC1_ADCO_MASK | ADC1SC1_ADCH3_MASK)
+
+void sensores(void);
+void ini_send(void);
+void com(char x);
+void conf_SCI(void);
+void retardo(int cont);
+
+void main(void) {
+	SOPT = 0x40;
+	conf_SCI();
+	EnableInterrupts;
+
+	for (;;) {
+		sensores();
+		retardo(1);
+	}
+}
+
+void sensores(void) {
+	com((char) 0);
+	com((char) 0);
+	ADC1SC1 = SC_IR0_FD;
+	while (ADC1SC1_COCO == 0) {
+	}
+	com((char) ADC1RL);
+
+	ADC1SC1 = SC_IR1_TI;
+	while (ADC1SC1_COCO == 0) {
+	}
+	com((char) ADC1RL);
+
+	ADC1SC1 = SC_IR2_FI;
+	while (ADC1SC1_COCO == 0) {
+	}
+	com((char) ADC1RL);
+
+	ADC1SC1 = SC_IR3_TD;
+	while (ADC1SC1_COCO == 0) {
+	}
+	com((char) ADC1RL);
+
+	ADC1SC1 = SC_IR4_F;
+	while (ADC1SC1_COCO == 0) {
+	}
+	com((char) ADC1RL);
+
+}
+
+void com(char x) {
+	SCI1D = x;
+	while (SCI1S1_TC == 0) {
+	}
+}
+void conf_SCI(void) {
+	////*****************************************
+	// comunicacion a 9600 baudios
+	// SCI baud rate = BUSCLK/(16xBR)
+	// BUSCLK = 4MHz
+	// 9600= 4.000.000/(16*26)
+	// SBR=0000000011010
+	////******************************
+	SCI1BDH = 0x00;
+	SCI1BDL = 0b00011010;
+	////*****************
+	//
+	//7 LOOPS =0 RxD and TxD use separate pins.
+	//6 SCISWAI =0 SCI clocks continue to run in wait mode so the SCI can be the source of an interrupt that wakes up the CPU
+	//5 RSRC =0 This bit has no meaning or effect unless the LOOPS bit is set to 1
+	//4 M =0 Bit or 8-Bit Mode Select, Normal — start + 8 data bits (LSB First) + stop.
+	//3 WAKE =0 Idle-line wakeup
+	//2 ILT =0 Idle character bit count starts after start bit.
+	//1 PE =0 No hardware parity generation or checking.
+	//0 PT =0 Even parity.
+	////*****************
+
+	SCI1C1 = 0x00;
+
+	////*******
+	//
+	//7 TIE =0 Transmit Interrupt Enable (for TDRE), Hardware interrupts from TDRE disabled (use polling).
+	//6 TCIE =0 Transmission Complete Interrupt Enable (for TC), Hardware interrupts from TC disabled (use polling).
+	//5 RIE =1 Receiver Interrupt Enable (for RDRF), Hardware interrupts from RDRF enabled.
+	//4 ILIE =0 Idle Line Interrupt Enable (for IDLE), Hardware interrupts from IDLE disabled (use polling)
+	//3 TE =1 Transmitter on.
+	//2 RE =1 Receiver on.
+	//1 RWU =0 Normal SCI receiver operation.
+	//0 SBK =0 Normal transmitter operation.
+	////*******
+	SCI1C2 = (SCI2C2_TE_MASK);
+}
+void retardo(int cont){
+	int n;
+	for(n=0; n<cont; cont++);
+}
